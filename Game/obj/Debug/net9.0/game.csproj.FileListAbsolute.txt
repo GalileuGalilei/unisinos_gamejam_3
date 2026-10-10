@@ -36,3 +36,7 @@ C:\Users\alfre\source\repos\unisinos_gamejam_3\game\obj\Debug\net9.0\refint\game
 C:\Users\alfre\source\repos\unisinos_gamejam_3\game\obj\Debug\net9.0\game.pdb
 C:\Users\alfre\source\repos\unisinos_gamejam_3\game\obj\Debug\net9.0\game.genruntimeconfig.cache
 C:\Users\alfre\source\repos\unisinos_gamejam_3\game\obj\Debug\net9.0\ref\game.dll
+C:\Users\alfre\source\repos\unisinos_gamejam_3\game\bin\Debug\net9.0\Content\sprites\atlas.xnb
+C:\Users\alfre\source\repos\unisinos_gamejam_3\game\obj\Debug\net9.0\game.sourcelink.json
+C:\Users\alfre\source\repos\unisinos_gamejam_3\game\bin\Debug\net9.0\Content\sprites\atlas-definition.xml
+C:\Users\alfre\source\repos\unisinos_gamejam_3\game\bin\Debug\net9.0\Content\fonts\game-font.xnb

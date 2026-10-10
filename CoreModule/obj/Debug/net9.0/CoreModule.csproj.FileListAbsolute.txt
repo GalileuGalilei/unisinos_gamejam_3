@@ -10,3 +10,4 @@ C:\Users\alfre\source\repos\unisinos_gamejam_3\CoreModule\obj\Debug\net9.0\CoreM
 C:\Users\alfre\source\repos\unisinos_gamejam_3\CoreModule\obj\Debug\net9.0\refint\CoreModule.dll
 C:\Users\alfre\source\repos\unisinos_gamejam_3\CoreModule\obj\Debug\net9.0\CoreModule.pdb
 C:\Users\alfre\source\repos\unisinos_gamejam_3\CoreModule\obj\Debug\net9.0\ref\CoreModule.dll
+C:\Users\alfre\source\repos\unisinos_gamejam_3\CoreModule\obj\Debug\net9.0\CoreModule.sourcelink.json

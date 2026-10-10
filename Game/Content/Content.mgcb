@@ -13,3 +13,23 @@
 
 #---------------------------------- Content ---------------------------------#
 
+#begin fonts/game-font.spritefont
+/importer:FontDescriptionImporter
+/processor:FontDescriptionProcessor
+/build:fonts/game-font.spritefont
+
+#begin sprites/atlas-definition.xml
+/copy:sprites/atlas-definition.xml
+
+#begin sprites/atlas.png
+/importer:TextureImporter
+/processor:TextureProcessor
+/processorParam:ColorKeyColor=255,0,255,255
+/processorParam:ColorKeyEnabled=True
+/processorParam:GenerateMipmaps=False
+/processorParam:PremultiplyAlpha=True
+/processorParam:ResizeToPowerOfTwo=False
+/processorParam:MakeSquare=False
+/processorParam:TextureFormat=Color
+/processorParam:Version=3.8.6.0
+/build:sprites/atlas.png
