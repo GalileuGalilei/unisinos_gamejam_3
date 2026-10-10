@@ -8,6 +8,7 @@ using MonoGameLibrary.Graphics;
 using MonoGameLibrary.Input;
 using MonoGameLibrary.Scenes;
 using game.Senoidal;
+using game.Audio;
 using System.Diagnostics;
 
 namespace game.Scenes;
@@ -20,6 +21,7 @@ public class WaveScene : Scene
 
     private GradientManager _gradientManager;
     private WaveManager _waveManager;
+    private AudioManager _audioManager;
 
     private InterferenceOverlayManager _overlayManager;
 
@@ -27,6 +29,8 @@ public class WaveScene : Scene
     private MouseState _previousMouse;
 
     private SpriteFont _font;
+
+    private bool _showDebug = false;
 
     public override void Initialize()
     {
@@ -55,6 +59,8 @@ public class WaveScene : Scene
 
         _overlayManager.PlayerOpacity = 0.05f;
         _overlayManager.PlayerBaseColor = Color.Cyan; // Pode testar cores diferentes aqui
+        _audioManager = new AudioManager();
+        _audioManager.LoadContent(Content);
     }
 
     public override void Update(GameTime gameTime)
@@ -65,13 +71,21 @@ public class WaveScene : Scene
         // VOLTA PRA TELA INICIAL
         if (Core.Input.Keyboard.WasKeyJustPressed(Keys.Escape))
         {
+            _audioManager.Stop();
             Core.ChangeScene(new TitleScene());
         }
 
         // PULA PRA PROXIMA FASE (SIPA REMOVER DEPOIS)
         if (Core.Input.Keyboard.WasKeyJustPressed(Keys.Space))
         {
+            _audioManager.PlayLevelCompleteJuice();
             Reset();
+        }
+
+        // MOSTRA O DEBUG
+        if (Core.Input.Keyboard.WasKeyJustPressed(Keys.F2))
+        {
+            _showDebug = !_showDebug;
         }
 
         // TROCAR PARÂMETRO
@@ -127,6 +141,10 @@ public class WaveScene : Scene
         }
 
 
+        bool isInteracting = (incrementValue != 0f);
+        _audioManager.Update(gameTime, _waveManager.GetMatchProgress(), isInteracting);
+
+        // Salva o estado atual para comparar no próximo frame
         _previousKeyboard = currentKeyboard;
         _previousMouse = currentMouse;
     }
@@ -137,6 +155,7 @@ public class WaveScene : Scene
             _waveManager.FrequencyDiff < FRQ_THRESHOLD &&
             _waveManager.PhaseDiff < PHA_THRESHOLD)
         {
+            _audioManager.PlayLevelCompleteJuice();
             Reset();
         }
     }
@@ -152,6 +171,12 @@ public class WaveScene : Scene
         }
     }
 
+    public override void UnloadContent()
+    {
+        _audioManager.UnloadContent();
+        base.UnloadContent();
+    }
+
     public override void Draw(GameTime gameTime)
     {
         Core.GraphicsDevice.Clear(Color.MonoGameOrange);
@@ -165,18 +190,24 @@ public class WaveScene : Scene
         Texture2D backgroundTexture = _gradientManager.GetTexture();
         Core.SpriteBatch.Draw(backgroundTexture, viewportRect, Color.White);
 
-        string debugText = 
-        $"Parametro sendo editado: {_waveManager.CurrentParameter}\n" +
-        $"---------Player----------\n" +
-        $"Amplitude: {_waveManager.PlayerParameters.Amplitude:F1}\n" +
-        $"Frequencia: {_waveManager.PlayerParameters.Frequency:F4}\n" +
-        $"Offset de Fase: {_waveManager.PlayerParameters.PhaseOffset:F2}\n" +
-        $"---------Diff----------\n" +
-        $"Amplitude: {_waveManager.AmplitudeDiff:F1}\n" +
-        $"Frequencia: {_waveManager.FrequencyDiff:F4}\n" +
-        $"Offset de Fase: {_waveManager.PhaseDiff:F2} ";
+        if (_showDebug)
+        {
+            string debugText = 
+            $"Parametro sendo editado: {_waveManager.CurrentParameter}\n" +
+            $"---------Player----------\n" +
+            $"Amplitude: {_waveManager.PlayerParameters.Amplitude:F1}\n" +
+            $"Frequencia: {_waveManager.PlayerParameters.Frequency:F4}\n" +
+            $"Offset de Fase: {_waveManager.PlayerParameters.PhaseOffset:F2}\n" +
+            $"---------Diff----------\n" +
+            $"Amplitude: {_waveManager.AmplitudeDiff:F1}\n" +
+            $"Frequencia: {_waveManager.FrequencyDiff:F4}\n" +
+            $"Offset de Fase: {_waveManager.PhaseDiff:F2}\n" +
+            $"---------Audio----------\n" +
+            $"Progresso: {(_waveManager.GetMatchProgress() * 100f):F0}%\n" +
+            $"Volume Ambiente: {_audioManager.CurrentVolume:F2}";
 
-        Core.SpriteBatch.DrawString(_font, debugText, new Vector2(10, 10), Color.Yellow);
+            Core.SpriteBatch.DrawString(_font, debugText, new Vector2(10, 10), Color.Yellow);
+        }
 
         Core.SpriteBatch.End();
 
