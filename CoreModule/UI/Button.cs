@@ -7,13 +7,15 @@ using MonoGameLibrary.Input;
 namespace MonoGameLibrary.UI;
 
 /// <summary>
-/// A clickable, text-based rectangular button.
+/// A clickable rectangular button with atlas-based visual states.
 /// </summary>
-public sealed class Button : IDisposable
+public sealed class Button
 {
-    private readonly Texture2D _pixel;
     private readonly Font _font;
     private readonly Action _onClick;
+    private readonly TextureRegion _defaultRegion;
+    private readonly TextureRegion _hoveredRegion;
+    private readonly TextureRegion _selectedRegion;
 
     /// <summary>
     /// Gets the text displayed by the button.
@@ -31,18 +33,25 @@ public sealed class Button : IDisposable
     public bool IsHovered { get; private set; }
 
     /// <summary>
+    /// Gets whether the mouse button is pressed while over the button.
+    /// </summary>
+    public bool IsSelected { get; private set; }
+
+    /// <summary>
     /// Creates a button that invokes the specified action when clicked.
     /// </summary>
     public Button(
-        GraphicsDevice graphicsDevice,
         Font font,
         string text,
         Rectangle bounds,
+        TextureAtlas atlas,
+        string spriteName,
         Action onClick)
     {
-        ArgumentNullException.ThrowIfNull(graphicsDevice);
         _font = font ?? throw new ArgumentNullException(nameof(font));
         Text = text ?? throw new ArgumentNullException(nameof(text));
+        ArgumentNullException.ThrowIfNull(atlas);
+        ArgumentException.ThrowIfNullOrWhiteSpace(spriteName);
         _onClick = onClick ?? throw new ArgumentNullException(nameof(onClick));
 
         if (bounds.Width <= 0 || bounds.Height <= 0)
@@ -51,8 +60,9 @@ public sealed class Button : IDisposable
         }
 
         Bounds = bounds;
-        _pixel = new Texture2D(graphicsDevice, 1, 1);
-        _pixel.SetData(new[] { Color.White });
+        _defaultRegion = atlas.GetRegion(spriteName);
+        _hoveredRegion = atlas.GetRegion($"{spriteName}_over");
+        _selectedRegion = atlas.GetRegion($"{spriteName}_selecionado");
     }
 
     /// <summary>
@@ -63,6 +73,7 @@ public sealed class Button : IDisposable
         ArgumentNullException.ThrowIfNull(mouse);
 
         IsHovered = Bounds.Contains(mouse.Position);
+        IsSelected = IsHovered && mouse.IsButtonDown(MouseButton.Left);
         if (IsHovered && mouse.WasButtonJustPressed(MouseButton.Left))
         {
             Activate();
@@ -81,11 +92,12 @@ public sealed class Button : IDisposable
     {
         ArgumentNullException.ThrowIfNull(spriteBatch);
 
-        Color backgroundColor = IsHovered
-            ? new Color(104, 156, 224)
-            : new Color(61, 91, 153);
-
-        spriteBatch.Draw(_pixel, Bounds, backgroundColor);
+        TextureRegion region = IsSelected
+            ? _selectedRegion
+            : IsHovered
+                ? _hoveredRegion
+                : _defaultRegion;
+        spriteBatch.Draw(region.Texture, Bounds, region.SourceRectangle, Color.White);
 
         Vector2 textSize = _font.MeasureString(Text);
         Vector2 textPosition = new(
@@ -94,7 +106,4 @@ public sealed class Button : IDisposable
         );
         _font.Draw(spriteBatch, Text, textPosition, Color.White);
     }
-
-    /// <inheritdoc />
-    public void Dispose() => _pixel.Dispose();
 }

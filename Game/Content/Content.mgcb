@@ -16,12 +16,15 @@
 #begin fonts/game-font.spritefont
 /importer:FontDescriptionImporter
 /processor:FontDescriptionProcessor
+/processorParam:PremultiplyAlpha=True
+/processorParam:TextureFormat=Compressed
+/processorParam:Version=3.8.6.0
 /build:fonts/game-font.spritefont
 
 #begin sprites/atlas-definition.xml
-/copy:sprites/atlas-definition.xml
+/copy:sprites/atlas-definition.xml;sprites/menu_sprites_definition.xml
 
-#begin sprites/atlas.png
+#begin sprites/menu_sprites.png
 /importer:TextureImporter
 /processor:TextureProcessor
 /processorParam:ColorKeyColor=255,0,255,255
@@ -32,4 +35,5 @@
 /processorParam:MakeSquare=False
 /processorParam:TextureFormat=Color
 /processorParam:Version=3.8.6.0
-/build:sprites/atlas.png
+/build:sprites/menu_sprites.png
+

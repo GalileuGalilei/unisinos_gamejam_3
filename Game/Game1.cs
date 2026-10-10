@@ -9,7 +9,7 @@ public class Game1 : Core
     // The background theme song.
     private Song _themeSong;
 
-    public Game1() : base("Game Title", 1280, 720, false)
+    public Game1() : base("Game Title", 620, 620, false)
     {
 
     }

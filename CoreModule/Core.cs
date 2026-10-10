@@ -100,6 +100,11 @@ public class Core : Game
         ExitOnEscape = true;
     }
 
+    public static void ExitGame()
+    {
+        s_instance.Exit();
+    }
+
     protected override void Initialize()
     {
         base.Initialize();
