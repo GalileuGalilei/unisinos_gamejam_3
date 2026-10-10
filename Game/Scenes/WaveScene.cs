@@ -12,9 +12,7 @@ namespace game.Scenes;
 
 public class WaveScene : Scene
 {
-    private const float AMP_THRESHOLD = 4f;
-    private const float FRQ_THRESHOLD = 0.0009f;
-    private const float PHA_THRESHOLD = 0.09f;
+    private const float MATCH_TOLERANCE = 0.1f;
 
     private GradientManager _gradientManager;
     private WaveManager _waveManager;
@@ -26,8 +24,8 @@ public class WaveScene : Scene
     private TextureRegion _overlay;
 
     private RadialButton _radialButtonAmplitude;
-    private RadialButton _radialButtonPhase;
     private RadialButton _radialButtonFrequency;
+    private RadialButton _radialButtonPhase;
 
     private bool _showDebug = false;
 
@@ -52,8 +50,8 @@ public class WaveScene : Scene
         _overlay = atlas.GetRegion("overlay");
         TextureRegion radialButtonRegion = atlas.GetRegion("botao_radial");
         _radialButtonAmplitude = new RadialButton(radialButtonRegion, new Rectangle(200, 20,  40, 40));
-        _radialButtonPhase     = new RadialButton(radialButtonRegion, new Rectangle(200, 70,  40, 40));
-        _radialButtonFrequency = new RadialButton(radialButtonRegion, new Rectangle(200, 120, 40, 40));
+        _radialButtonFrequency     = new RadialButton(radialButtonRegion, new Rectangle(200, 70,  40, 40));
+        _radialButtonPhase = new RadialButton(radialButtonRegion, new Rectangle(200, 120, 40, 40));
 
         _input = new WaveInput(_radialButtonAmplitude, _radialButtonFrequency, _radialButtonPhase);
 
@@ -119,9 +117,7 @@ public class WaveScene : Scene
 
     private void CheckPrecision()
     {
-        if (_waveManager.AmplitudeDiff < AMP_THRESHOLD &&
-            _waveManager.FrequencyDiff < FRQ_THRESHOLD &&
-            _waveManager.PhaseDiff < PHA_THRESHOLD)
+        if (_waveManager.GetMatchProgress() >= 1.0f - MATCH_TOLERANCE)
         {
             CompleteLevel();
         }
