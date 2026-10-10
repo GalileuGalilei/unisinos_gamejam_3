@@ -15,6 +15,11 @@ namespace game.Input
         private readonly RadialButton _frequencyKnob;
         private readonly RadialButton _phaseKnob;
 
+        // Travas de input
+        public bool LockKeyboard { get; set; } = true;
+        public bool LockScroll { get; set; } = true;
+        public bool LockRadial { get; set; } = false;
+
         // Comandos de cena
         public bool BackRequested { get; private set; }
         public bool SkipRequested { get; private set; }
@@ -56,18 +61,21 @@ namespace game.Input
 
             // Troca de parâmetro (A/D ou setas)
             ParameterChange = 0;
-            if (keyboard.WasKeyJustPressed(Keys.D) || keyboard.WasKeyJustPressed(Keys.Right))
-                ParameterChange = 1;
-            else if (keyboard.WasKeyJustPressed(Keys.A) || keyboard.WasKeyJustPressed(Keys.Left))
-                ParameterChange = -1;
+            if (!LockKeyboard)
+            {
+                if (keyboard.WasKeyJustPressed(Keys.D) || keyboard.WasKeyJustPressed(Keys.Right))
+                    ParameterChange = 1;
+                else if (keyboard.WasKeyJustPressed(Keys.A) || keyboard.WasKeyJustPressed(Keys.Left))
+                    ParameterChange = -1;
+            }
 
             // Ajuste do parâmetro selecionado (scroll tem prioridade sobre W/S ou setas)
             SelectedParameterDelta = 0f;
-            if (mouse.ScrollWheelDelta != 0)
+            if (!LockScroll && mouse.ScrollWheelDelta != 0)
             {
                 SelectedParameterDelta = Math.Sign(mouse.ScrollWheelDelta);
             }
-            else
+            else if (!LockKeyboard)
             {
                 if (keyboard.IsKeyDown(Keys.W) || keyboard.IsKeyDown(Keys.Up))
                     SelectedParameterDelta = 1f;
@@ -76,13 +84,22 @@ namespace game.Input
             }
 
             // Botões radiais
-            _amplitudeKnob.Update(mouse);
-            _frequencyKnob.Update(mouse);
-            _phaseKnob.Update(mouse);
+            if (!LockRadial)
+            {
+                _amplitudeKnob.Update(mouse);
+                _frequencyKnob.Update(mouse);
+                _phaseKnob.Update(mouse);
 
-            AmplitudeRotation = _amplitudeKnob.RotationDelta;
-            FrequencyRotation = _frequencyKnob.RotationDelta;
-            PhaseRotation = _phaseKnob.RotationDelta;
+                AmplitudeRotation = _amplitudeKnob.RotationDelta;
+                FrequencyRotation = _frequencyKnob.RotationDelta;
+                PhaseRotation = _phaseKnob.RotationDelta;
+            }
+            else
+            {
+                AmplitudeRotation = 0f;
+                FrequencyRotation = 0f;
+                PhaseRotation = 0f;
+            }
         }
     }
 }
