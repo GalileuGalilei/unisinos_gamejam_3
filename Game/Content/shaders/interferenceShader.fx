@@ -34,6 +34,11 @@ VertexShaderOutput MainVS(in VertexShaderInput input)
 	return output;
 }
 
+float random(float2 uv)
+{
+	return frac(sin(dot(uv, float2(12.9898, 78.233))) * 43758.5453123);
+}
+
 float4 MainPS(VertexShaderOutput input) : COLOR
 {
     float2 uv = input.TexCoord;
