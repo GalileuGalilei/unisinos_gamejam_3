@@ -181,8 +181,8 @@ public class WaveScene : Scene
         Core.SpriteBatch.Begin();
         _overlay.Draw(Core.SpriteBatch, Vector2.Zero, Color.White);
         _radialButtonAmplitude.Draw();
-        _radialButtonPhase.Draw();
         _radialButtonFrequency.Draw();
+        _radialButtonPhase.Draw();
         Core.SpriteBatch.End();
     }
 }
