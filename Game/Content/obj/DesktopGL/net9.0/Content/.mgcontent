@@ -5,9 +5,11 @@
   <Config />
   <SourceFiles>
     <File>C:/Users/alfre/source/repos/unisinos_gamejam_3/Game/Content/fonts/game-font.spritefont</File>
-    <File>C:/Users/alfre/source/repos/unisinos_gamejam_3/Game/Content/sprites/menu_sprites.png</File>
+    <File>C:/Users/alfre/source/repos/unisinos_gamejam_3/Game/Content/shaders/WaveShader.fx</File>
+    <File>C:/Users/alfre/source/repos/unisinos_gamejam_3/Game/Content/sprites/atlas.png</File>
   </SourceFiles>
   <DestFiles>
+    <File xsi:nil="true" />
     <File xsi:nil="true" />
     <File xsi:nil="true" />
   </DestFiles>

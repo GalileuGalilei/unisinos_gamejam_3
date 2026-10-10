@@ -1,6 +1,6 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <TextureAtlas>
-    <Texture>sprites/menu_sprites</Texture>
+    <Texture>sprites/atlas</Texture>
     <Regions>
         <Region name="comecar"             x="0" y="0" width="256" height="256" />
         <Region name="comecar_over"        x="256" y="0" width="256" height="256" />

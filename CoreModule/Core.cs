@@ -24,6 +24,9 @@ public class Core : Game
     // The next scene to switch to, if there is one.
     private static Scene s_nextScene;
 
+    private readonly Point? _renderResolution;
+    private RenderTarget2D _renderTarget;
+
     /// <summary>
     /// Gets the graphics device manager to control the presentation of graphics.
     /// </summary>
@@ -33,6 +36,12 @@ public class Core : Game
     /// Gets the graphics device used to create graphical resources and perform primitive rendering.
     /// </summary>
     public static new GraphicsDevice GraphicsDevice { get; private set; }
+
+    /// <summary>
+    /// Gets the coordinate dimensions used to render the active scene.
+    /// </summary>
+    public static Point RenderResolution =>
+        s_instance._renderResolution ?? GraphicsDevice.Viewport.Bounds.Size;
 
     /// <summary>
     /// Gets the sprite batch used for all 2D rendering.
@@ -61,7 +70,8 @@ public class Core : Game
     /// <param name="width">The initial width, in pixels, of the game window.</param>
     /// <param name="height">The initial height, in pixels, of the game window.</param>
     /// <param name="fullScreen">Indicates if the game should start in fullscreen mode.</param>
-    public Core(string title, int width, int height, bool fullScreen)
+    /// <param name="renderResolution">Optional internal resolution to scale to the window.</param>
+    public Core(string title, int width, int height, bool fullScreen, Point? renderResolution = null)
     {
         // Ensure that multiple cores are not created.
         if (s_instance != null)
@@ -69,8 +79,15 @@ public class Core : Game
             throw new InvalidOperationException($"Only a single Core instance can be created");
         }
 
+        if (renderResolution.HasValue &&
+            (renderResolution.Value.X <= 0 || renderResolution.Value.Y <= 0))
+        {
+            throw new ArgumentOutOfRangeException(nameof(renderResolution), "Render resolution dimensions must be positive.");
+        }
+
         // Store reference to engine for global member access.
         s_instance = this;
+        _renderResolution = renderResolution;
 
         // Create a new graphics device manager.
         Graphics = new GraphicsDeviceManager(this);
@@ -116,6 +133,15 @@ public class Core : Game
         // Create the sprite batch instance.
         SpriteBatch = new SpriteBatch(GraphicsDevice);
 
+        if (_renderResolution.HasValue)
+        {
+            _renderTarget = new RenderTarget2D(
+                GraphicsDevice,
+                _renderResolution.Value.X,
+                _renderResolution.Value.Y
+            );
+        }
+
         // Create the input manager.
         Input = new InputManager();
     }
@@ -150,10 +176,34 @@ public class Core : Game
         // If there is an active scene, draw it.
         if (s_activeScene != null)
         {
-            s_activeScene.Draw(gameTime);
+            if (_renderTarget == null)
+            {
+                s_activeScene.Draw(gameTime);
+            }
+            else
+            {
+                GraphicsDevice.SetRenderTarget(_renderTarget);
+                s_activeScene.Draw(gameTime);
+                GraphicsDevice.SetRenderTarget(null);
+
+                GraphicsDevice.Clear(Color.Black);
+                SpriteBatch.Begin(samplerState: SamplerState.PointClamp);
+                SpriteBatch.Draw(_renderTarget, GraphicsDevice.Viewport.Bounds, Color.White);
+                SpriteBatch.End();
+            }
         }
 
         base.Draw(gameTime);
+    }
+
+    protected override void Dispose(bool disposing)
+    {
+        if (disposing)
+        {
+            _renderTarget?.Dispose();
+        }
+
+        base.Dispose(disposing);
     }
 
     public static void ChangeScene(Scene next)

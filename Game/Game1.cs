@@ -1,4 +1,5 @@
 ﻿using game.Scenes;
+using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Media;
 using MonoGameLibrary;
 
@@ -9,7 +10,7 @@ public class Game1 : Core
     // The background theme song.
     private Song _themeSong;
 
-    public Game1() : base("Game Title", 620, 620, false)
+    public Game1() : base("Game Title", 620, 620, false, new Point(256, 256))
     {
 
     }
@@ -22,7 +23,7 @@ public class Game1 : Core
         //Audio.PlaySong(_themeSong);
 
         // Start the game with the title scene.
-        ChangeScene(new TitleScene());
+        ChangeScene(new WaveScene());
     }
 
     protected override void LoadContent()

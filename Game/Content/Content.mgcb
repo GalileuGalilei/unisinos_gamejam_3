@@ -21,10 +21,18 @@
 /processorParam:Version=3.8.6.0
 /build:fonts/game-font.spritefont
 
-#begin sprites/atlas-definition.xml
-/copy:sprites/atlas-definition.xml;sprites/menu_sprites_definition.xml
+#begin shaders/WaveShader.fx
+/importer:EffectImporter
+/processor:EffectProcessor
+/processorParam:DebugMode=Auto
+/processorParam:Defines=
+/processorParam:Version=3.8.6.0
+/build:shaders/WaveShader.fx
 
-#begin sprites/menu_sprites.png
+#begin sprites/atlas-definition.xml
+/copy:sprites/atlas-definition.xml
+
+#begin sprites/atlas.png
 /importer:TextureImporter
 /processor:TextureProcessor
 /processorParam:ColorKeyColor=255,0,255,255
@@ -35,5 +43,5 @@
 /processorParam:MakeSquare=False
 /processorParam:TextureFormat=Color
 /processorParam:Version=3.8.6.0
-/build:sprites/menu_sprites.png
+/build:sprites/atlas.png
 
