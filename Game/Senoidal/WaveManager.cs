@@ -15,13 +15,13 @@ namespace game.Senoidal
         }
 
         private const int MIN_AMPLITUDE = 10;
-        private const int MAX_AMPLITUDE = 200;
+        private const int MAX_AMPLITUDE = 50;
         private const int MIN_FREQUENCY = 1;
-        private const int MAX_FREQUENCY = 10;
+        private const int MAX_FREQUENCY = 40;
 
         private const float WAVE_SPEED = 1.5f;
-        private const float AMPLITUDE_PER_RADIAN = 20f;
-        private const float FREQUENCY_PER_RADIAN = 0.001f;
+        private const float AMPLITUDE_PER_RADIAN = 10f;
+        private const float FREQUENCY_PER_RADIAN = 0.004f;
 
         private Random _random;
 

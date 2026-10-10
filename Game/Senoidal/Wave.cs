@@ -17,9 +17,9 @@ namespace game.Senoidal
 
         // Customizações Visuais
         public Color Color { get; set; } = Color.White;
-        public float Thickness { get; set; } = 3.0f;
+        public float Thickness { get; set; } = 1.5f;
         public bool IsDotted { get; set; } = false;
-        public float DotSpacing { get; set; } = 8.0f; // Quanto menor, mais pontilhados por segmento
+        public float DotSpacing { get; set; } = 5.0f; // Quanto menor, mais pontilhados por segmento
 
         public Wave(GraphicsDevice graphicsDevice, Effect waveEffect)
         {
