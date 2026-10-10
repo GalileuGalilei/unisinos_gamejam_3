@@ -21,6 +21,8 @@ public class WaveScene : Scene
     private GradientManager _gradientManager;
     private WaveManager _waveManager;
 
+    private InterferenceOverlayManager _overlayManager;
+
     private KeyboardState _previousKeyboard;
     private MouseState _previousMouse;
 
@@ -36,11 +38,23 @@ public class WaveScene : Scene
     public override void LoadContent()
     {
         _gradientManager = new GradientManager();
-
         _font = Content.Load<SpriteFont>("fonts/game-font");
 
         Effect waveShader = Content.Load<Effect>("shaders/WaveShader");
         _waveManager = new WaveManager(waveShader);
+
+        Effect interferenceShader = Content.Load<Effect>("shaders/interferenceShader");
+        _overlayManager = new InterferenceOverlayManager(Core.GraphicsDevice, interferenceShader);
+        
+        // Associa as ondas criadas pelo WaveManager ao OverlayManager
+        _overlayManager.UpdateWaves(_waveManager.TargetWave, _waveManager.PlayerWave);
+
+        // Exemplo de como você pode setar os parâmetros visualmente!
+        _overlayManager.TargetOpacity = 0.05f;
+        _overlayManager.TargetBaseColor = Color.LightGray;
+
+        _overlayManager.PlayerOpacity = 0.05f;
+        _overlayManager.PlayerBaseColor = Color.Cyan; // Pode testar cores diferentes aqui
     }
 
     public override void Update(GameTime gameTime)
@@ -97,7 +111,22 @@ public class WaveScene : Scene
 
         _waveManager.Update(gameTime);
 
-        // Salva o estado atual para comparar no próximo frame
+        float maxAmpDiff = 190f;
+        float maxFreqDiff = 0.009f;
+        float maxPhaseDiff = (float)Math.PI;
+
+        float normAmp = MathHelper.Clamp(_waveManager.AmplitudeDiff / maxAmpDiff, 0f, 1f);
+        float normFreq = MathHelper.Clamp(_waveManager.FrequencyDiff / maxFreqDiff, 0f, 1f);
+        float normPhase = MathHelper.Clamp(_waveManager.PhaseDiff / maxPhaseDiff, 0f, 1f);
+
+        float totalError = (normAmp + normFreq + normPhase) / 3f;
+
+        if (_overlayManager != null)
+        {
+            _overlayManager.PlayerErrorLevel = totalError;
+        }
+
+
         _previousKeyboard = currentKeyboard;
         _previousMouse = currentMouse;
     }
@@ -116,6 +145,11 @@ public class WaveScene : Scene
     {
         _gradientManager.ResetTexture();
         _waveManager.Reset();
+
+        if (_overlayManager != null)
+        {
+            _overlayManager.UpdateWaves(_waveManager.TargetWave, _waveManager.PlayerWave);
+        }
     }
 
     public override void Draw(GameTime gameTime)
@@ -147,5 +181,10 @@ public class WaveScene : Scene
         Core.SpriteBatch.End();
 
         _waveManager.Draw(Core.SpriteBatch);
+
+        if (_overlayManager != null)
+        {
+            _overlayManager.Draw(Core.SpriteBatch);
+        }
     }
 }

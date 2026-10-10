@@ -13,6 +13,7 @@ namespace game.Senoidal
             Frequency,
             PhaseOffset
         }
+        // Adicione estas propriedades na classe WaveManager
 
         private const int MIN_AMPLITUDE = 10;
         private const int MAX_AMPLITUDE = 200;
@@ -24,8 +25,9 @@ namespace game.Senoidal
         private Random _random;
 
         private Effect _waveShader;
-        private Wave _targetWave;
-        private Wave _playerWave;
+        
+        public Wave TargetWave {get; private set;}
+        public Wave PlayerWave {get; private set;}
 
         public WaveParameters TargetParameters;
         public WaveParameters PlayerParameters;
@@ -35,6 +37,23 @@ namespace game.Senoidal
         public float PhaseDiff;
 
         public EditableParameter CurrentParameter { get; private set; } = EditableParameter.Amplitude;
+
+        public float TargetBandCount 
+        {
+            get 
+            {
+                int screenWidth = Core.GraphicsDevice.Viewport.Width;
+                return screenWidth * PlayerParameters.Frequency * 2.0f;
+            }
+        }
+
+        public float TargetInterferencePhase 
+        {
+            get 
+            {
+                return PlayerWave.Phase + PlayerParameters.PhaseOffset;
+            }
+        }
 
         public void ChangeParameter(int direction)
         {
@@ -68,7 +87,7 @@ namespace game.Senoidal
                     break;
             }
 
-            _playerWave.Parameters = PlayerParameters;
+            PlayerWave.Parameters = PlayerParameters;
             TargetParameters.CalculateDifference(PlayerParameters, out AmplitudeDiff, out FrequencyDiff, out PhaseDiff);
         }
 
@@ -82,8 +101,8 @@ namespace game.Senoidal
 
         public void Update(GameTime gameTime)
         {
-            _targetWave.Update(gameTime);
-            _playerWave.Update(gameTime);
+            TargetWave.Update(gameTime);
+            PlayerWave.Update(gameTime);
         }
 
         public void Reset()
@@ -106,7 +125,7 @@ namespace game.Senoidal
 
             PlayerParameters = new WaveParameters(playerStarterAmplitude, playerStarterFrequency, playerStarterPhaseOffset);
 
-            _targetWave = new Wave(Core.GraphicsDevice, _waveShader)
+            TargetWave = new Wave(Core.GraphicsDevice, _waveShader)
             {
                 Parameters = TargetParameters,
                 Speed = WAVE_SPEED,
@@ -116,7 +135,7 @@ namespace game.Senoidal
                 DotSpacing = dotSpacing
             };
 
-            _playerWave = new Wave(Core.GraphicsDevice, _waveShader)
+            PlayerWave = new Wave(Core.GraphicsDevice, _waveShader)
             {
                 Parameters = PlayerParameters,
                 Speed = WAVE_SPEED,
@@ -128,8 +147,8 @@ namespace game.Senoidal
 
         public void Draw(SpriteBatch spriteBatch)
         {
-            _targetWave.Draw(Core.SpriteBatch);
-            _playerWave.Draw(Core.SpriteBatch);
+            TargetWave.Draw(Core.SpriteBatch);
+            PlayerWave.Draw(Core.SpriteBatch);
         }
     }
 }

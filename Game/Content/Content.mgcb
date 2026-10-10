@@ -21,6 +21,14 @@
 /processorParam:Version=3.8.6.0
 /build:fonts/game-font.spritefont
 
+#begin shaders/interferenceShader.fx
+/importer:EffectImporter
+/processor:EffectProcessor
+/processorParam:DebugMode=Auto
+/processorParam:Defines=
+/processorParam:Version=3.8.6.0
+/build:shaders/interferenceShader.fx
+
 #begin shaders/WaveShader.fx
 /importer:EffectImporter
 /processor:EffectProcessor
