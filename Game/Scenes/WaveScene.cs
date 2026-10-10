@@ -49,9 +49,9 @@ public class WaveScene : Scene
         TextureAtlas atlas = TextureAtlas.FromFile(Core.Content, "sprites/atlas-definition.xml");
         _overlay = atlas.GetRegion("overlay");
         TextureRegion radialButtonRegion = atlas.GetRegion("botao_radial");
-        _radialButtonAmplitude = new RadialButton(radialButtonRegion, new Rectangle(200, 20,  40, 40));
-        _radialButtonFrequency     = new RadialButton(radialButtonRegion, new Rectangle(200, 70,  40, 40));
-        _radialButtonPhase = new RadialButton(radialButtonRegion, new Rectangle(200, 120, 40, 40));
+        _radialButtonAmplitude = new RadialButton(radialButtonRegion, new Rectangle(195, 20,  56, 56));
+        _radialButtonFrequency     = new RadialButton(radialButtonRegion, new Rectangle(195, 70,  56, 56));
+        _radialButtonPhase = new RadialButton(radialButtonRegion, new Rectangle(195, 120, 56, 56));
 
         _input = new WaveInput(_radialButtonAmplitude, _radialButtonFrequency, _radialButtonPhase);
 
