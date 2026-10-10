@@ -204,7 +204,8 @@ public class WaveScene : Scene
             $"Offset de Fase: {_waveManager.PhaseDiff:F2}\n" +
             $"---------Audio----------\n" +
             $"Progresso: {(_waveManager.GetMatchProgress() * 100f):F0}%\n" +
-            $"Volume Ambiente: {_audioManager.CurrentVolume:F2}";
+            $"Volume Ambiente: {_audioManager.CurrentVolume:F2}\n" +
+            $"Volume Estática: {_audioManager.CurrentStaticVolume:F2}";
 
             Core.SpriteBatch.DrawString(_font, debugText, new Vector2(10, 10), Color.Yellow);
         }
