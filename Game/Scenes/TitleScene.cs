@@ -5,6 +5,7 @@ using MonoGameLibrary;
 using MonoGameLibrary.Graphics;
 using MonoGameLibrary.Scenes;
 using MonoGameLibrary.UI;
+using game.Senoidal;
 
 namespace game.Scenes;
 
@@ -13,8 +14,11 @@ public class TitleScene : Scene
     private Font _font;
     private Button _startButton;
     private Button _exitButton;
+    private TextureRegion _overlayRegion;
+    private TextureRegion _tituloRegion;
 
-    private RadialButton _radialButton;
+    private InterferenceOverlayManager _overlayManager;
+
 
     public override void Initialize()
     {
@@ -25,41 +29,38 @@ public class TitleScene : Scene
     public override void LoadContent()
     {
         _font = new Font(Content.Load<SpriteFont>("fonts/game-font"));
-        TextureAtlas atlas = TextureAtlas.FromFile(Core.Content, "sprites/menu_sprites_definition.xml");
+        TextureAtlas atlas = TextureAtlas.FromFile(Core.Content, "sprites/atlas-definition.xml");
+        _overlayRegion = atlas.GetRegion("overlay");
+        _tituloRegion = atlas.GetRegion("titulo_menu");
 
-        Rectangle viewport = Core.GraphicsDevice.Viewport.Bounds;
-        const int buttonWidth = 256;
-        const int buttonHeight = 256;
+        Point renderResolution = Core.RenderResolution;
+        const int buttonWidth = 128;
+        const int buttonHeight = 100;
         const int buttonSpacing = 16;
         int buttonsHeight = buttonHeight * 2 + buttonSpacing;
-        int buttonsTop = (viewport.Height - buttonsHeight) / 2;
+        int buttonsTop = (renderResolution.Y - buttonsHeight) / 2;
+        int xPos = 40;
         Rectangle startButtonBounds = new(
-            (viewport.Width - buttonWidth) / 2,
-            buttonsTop,
+            xPos,
+            100,
             buttonWidth,
             buttonHeight
         );
         Rectangle exitButtonBounds = new(
-            startButtonBounds.X,
-            buttonsTop + buttonHeight + buttonSpacing,
+            xPos,
+            150,
             buttonWidth,
             buttonHeight
         );
 
-        Rectangle radialButtonBounds = new(
-            startButtonBounds.X,
-            buttonsTop,
-            buttonWidth,
-            buttonHeight
-        );
-
+ 
         _startButton = new Button(
             _font,
             "",
             startButtonBounds,
             atlas,
             "comecar",
-            () => Core.ChangeScene(new GameScene())
+            () => Core.ChangeScene(new WaveScene())
         );
 
         _exitButton = new Button(
@@ -71,14 +72,21 @@ public class TitleScene : Scene
             () => Core.ExitGame()
         );
 
-        _radialButton = new RadialButton(atlas.GetRegion("comecar"), radialButtonBounds);
+        Effect interferenceShader = Content.Load<Effect>("shaders/interferenceShader");
+        _overlayManager = new InterferenceOverlayManager(Core.GraphicsDevice, interferenceShader);
+
+        // Exemplo de como você pode setar os parâmetros visualmente!
+        _overlayManager.TargetOpacity = 0.05f;
+        _overlayManager.TargetBaseColor = Color.LightGray;
+
+        _overlayManager.PlayerOpacity = 0.05f;
+        _overlayManager.PlayerBaseColor = Color.Cyan; // Pode testar cores diferentes aqui
     }
 
     public override void Update(GameTime gameTime)
     {
-        //_startButton.Update(Core.Input.Mouse);
-       // _exitButton.Update(Core.Input.Mouse);
-        _radialButton.Update(Core.Input.Mouse);
+        _startButton.Update(Core.Input.Mouse);
+        _exitButton.Update(Core.Input.Mouse);
 
         // Keep Enter as a keyboard shortcut for the start button.
         if (Core.Input.Keyboard.WasKeyJustPressed(Keys.Enter))
@@ -92,9 +100,10 @@ public class TitleScene : Scene
         Core.GraphicsDevice.Clear(new Color(32, 40, 78, 255));
 
         Core.SpriteBatch.Begin(samplerState: SamplerState.PointClamp);
-        //_startButton.Draw(Core.SpriteBatch);
-        //_exitButton.Draw(Core.SpriteBatch);
-        _radialButton.Draw();
+        _overlayRegion.Draw(Core.SpriteBatch, new Vector2(0, 0), Color.White, 0, Vector2.Zero, new Vector2(1f, 1f), SpriteEffects.None, 0);
+        _startButton.Draw(Core.SpriteBatch);
+        _exitButton.Draw(Core.SpriteBatch);
+        _tituloRegion.Draw(Core.SpriteBatch, new Vector2(40, 20), Color.White, 0, Vector2.Zero, new Vector2(0.5f, 0.5f), SpriteEffects.None, 0);
         Core.SpriteBatch.End();
     }
 

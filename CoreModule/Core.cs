@@ -44,6 +44,24 @@ public class Core : Game
         s_instance._renderResolution ?? GraphicsDevice.Viewport.Bounds.Size;
 
     /// <summary>
+    /// Converts a window-space point to the coordinate space used to render the active scene.
+    /// </summary>
+    public static Point ScreenToRenderPosition(Point screenPosition)
+    {
+        Rectangle viewport = GraphicsDevice.Viewport.Bounds;
+        if (viewport.Width <= 0 || viewport.Height <= 0)
+        {
+            throw new InvalidOperationException("The graphics viewport must have positive dimensions.");
+        }
+
+        Point renderResolution = RenderResolution;
+        return new Point(
+            (int)MathF.Floor((screenPosition.X - viewport.X) * renderResolution.X / (float)viewport.Width),
+            (int)MathF.Floor((screenPosition.Y - viewport.Y) * renderResolution.Y / (float)viewport.Height)
+        );
+    }
+
+    /// <summary>
     /// Gets the sprite batch used for all 2D rendering.
     /// </summary>
     public static SpriteBatch SpriteBatch { get; private set; }

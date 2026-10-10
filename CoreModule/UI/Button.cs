@@ -23,7 +23,7 @@ public sealed class Button
     public string Text { get; }
 
     /// <summary>
-    /// Gets the button bounds in screen coordinates.
+    /// Gets the button bounds in scene render coordinates.
     /// </summary>
     public Rectangle Bounds { get; }
 
@@ -72,7 +72,10 @@ public sealed class Button
     {
         ArgumentNullException.ThrowIfNull(mouse);
 
-        IsHovered = Bounds.Contains(mouse.Position);
+        Point renderPosition = Core.ScreenToRenderPosition(mouse.Position);
+        Rectangle slimBounds = new Rectangle(Bounds.X, Bounds.Y, Bounds.Width, Bounds.Height);
+        slimBounds.Inflate(-20, -20); // Optional: shrink bounds slightly for better click detection
+        IsHovered = slimBounds.Contains(renderPosition);
         IsSelected = IsHovered && mouse.IsButtonDown(MouseButton.Left);
         if (IsHovered && mouse.WasButtonJustPressed(MouseButton.Left))
         {

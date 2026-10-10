@@ -37,12 +37,7 @@ public class RadialButton
         ArgumentNullException.ThrowIfNull(mouse);
         RotationDelta = 0f;
 
-        Point viewportSize = Core.GraphicsDevice.Viewport.Bounds.Size;
-        Point renderResolution = Core.RenderResolution;
-        Point mousePosition = new(
-            mouse.Position.X * renderResolution.X / viewportSize.X,
-            mouse.Position.Y * renderResolution.Y / viewportSize.Y
-        );
+        Point mousePosition = Core.ScreenToRenderPosition(mouse.Position);
         Vector2 centerPosition = new(
             _bounds.X + _bounds.Width / 2f,
             _bounds.Y + _bounds.Height / 2f
