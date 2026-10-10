@@ -21,6 +21,9 @@ namespace game.Senoidal
         private Wave _targetWave;
         private Wave _playerWave;
 
+        private WaveParameters TargetParameters;
+        private WaveParameters PlayerParameters;
+
         public WaveManager(GraphicsDevice graphicsDevice, Effect waveShader)
         {
             _graphicsDevice = graphicsDevice;
@@ -42,19 +45,25 @@ namespace game.Senoidal
             float targetFrequency = _random.Next(MIN_FREQUENCY, MAX_FREQUENCY) / 1000f;
             float targetPhaseOffset = (float)(_random.NextDouble() * Math.PI * 2);
 
-            float dotSpacing = targetAmplitude / 10f + 1;
+            TargetParameters = new WaveParameters(targetAmplitude, targetFrequency, targetPhaseOffset);
+
+            float baseDotSpacing = 12f;
+            float maxSlope = (float)(targetAmplitude * 2 * Math.PI * targetFrequency);
+            float averageSlope = maxSlope / (float)Math.Sqrt(2);
+            float stretchFactor = (float)Math.Sqrt(1 + (averageSlope * averageSlope));
+            float dotSpacing = baseDotSpacing / stretchFactor;
 
             float playerStarterAmplitude = _random.Next(MIN_AMPLITUDE, MAX_AMPLITUDE);
             float playerStarterFrequency = _random.Next(MIN_FREQUENCY, MAX_FREQUENCY) / 1000f;
             float playerStarterPhaseOffset = (float)(_random.NextDouble() * Math.PI * 2);
 
+            PlayerParameters = new WaveParameters(playerStarterAmplitude, playerStarterFrequency, playerStarterPhaseOffset);
+
             _targetWave = new Wave(Core.GraphicsDevice, _waveShader)
             {
-                Amplitude = targetAmplitude,
-                Frequency = targetFrequency,
-                PhaseOffset = targetPhaseOffset,
+                Parameters = TargetParameters,
                 Speed = WAVE_SPEED,
-                Color = Color.Silver,
+                Color = Color.WhiteSmoke,
                 Thickness = 4.0f,
                 IsDotted = true,
                 DotSpacing = dotSpacing
@@ -62,9 +71,7 @@ namespace game.Senoidal
 
             _playerWave = new Wave(Core.GraphicsDevice, _waveShader)
             {
-                Amplitude = playerStarterAmplitude,
-                Frequency = playerStarterFrequency,
-                PhaseOffset = playerStarterPhaseOffset,
+                Parameters = PlayerParameters,
                 Speed = WAVE_SPEED,
                 Color = Color.White,
                 Thickness = 4.0f,

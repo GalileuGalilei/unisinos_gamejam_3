@@ -11,10 +11,8 @@ namespace game.Senoidal
         private Effect _waveEffect;
 
         // Propriedades físicas da onda
-        public float Amplitude { get; set; } = 100f;
-        public float Frequency { get; set; } = 0.003f; // Valor menor por conta da escala de pixels
+        public WaveParameters Parameters; 
         public float Phase { get; set; } = 0f;
-        public float PhaseOffset { get; set; } = 0f;
         public float Speed { get; set; } = 2f;
 
         // Customizações Visuais
@@ -49,9 +47,9 @@ namespace game.Senoidal
             _waveEffect.Parameters["ScreenWidth"]?.SetValue((float)screenWidth);
             _waveEffect.Parameters["ScreenHeight"]?.SetValue((float)screenHeight);
             _waveEffect.Parameters["CenterY"]?.SetValue(centerY);
-            _waveEffect.Parameters["Amplitude"]?.SetValue(Amplitude);
-            _waveEffect.Parameters["Frequency"]?.SetValue(Frequency);
-            _waveEffect.Parameters["Phase"]?.SetValue(Phase + PhaseOffset);
+            _waveEffect.Parameters["Amplitude"]?.SetValue(Parameters.Amplitude);
+            _waveEffect.Parameters["Frequency"]?.SetValue(Parameters.Frequency);
+            _waveEffect.Parameters["Phase"]?.SetValue(Phase + Parameters.PhaseOffset);
 
             // Passa as configurações de estilização
             _waveEffect.Parameters["WaveColor"]?.SetValue(Color.ToVector4());
