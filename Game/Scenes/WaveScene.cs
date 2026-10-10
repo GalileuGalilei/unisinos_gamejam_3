@@ -14,11 +14,17 @@ namespace game.Scenes;
 
 public class WaveScene : Scene
 {
+    private const float AMP_THRESHOLD = 4f;
+    private const float FRQ_THRESHOLD = 0.0001f;
+    private const float PHA_THRESHOLD = 0.09f;
+
     private GradientManager _gradientManager;
     private WaveManager _waveManager;
 
     private KeyboardState _previousKeyboard;
     private MouseState _previousMouse;
+
+    private SpriteFont _font;
 
     public override void Initialize()
     {
@@ -30,6 +36,8 @@ public class WaveScene : Scene
     public override void LoadContent()
     {
         _gradientManager = new GradientManager();
+
+        _font = Content.Load<SpriteFont>("fonts/game-font");
 
         Effect waveShader = Content.Load<Effect>("shaders/WaveShader");
         _waveManager = new WaveManager(waveShader);
@@ -49,8 +57,7 @@ public class WaveScene : Scene
         // PULA PRA PROXIMA FASE (SIPA REMOVER DEPOIS)
         if (Core.Input.Keyboard.WasKeyJustPressed(Keys.Space))
         {
-            _gradientManager.ResetTexture();
-            _waveManager.Reset();
+            Reset();
         }
 
         // TROCAR PARÂMETRO
@@ -68,13 +75,11 @@ public class WaveScene : Scene
         // INCREMENTAR/DECREMENTAR VALOR
         float incrementValue = 0f;
 
-        // A. Verifica o Scroll do Mouse (Normalizado via Math.Sign para retornar apenas -1, 0 ou 1)
         int scrollDelta = currentMouse.ScrollWheelValue - _previousMouse.ScrollWheelValue;
         if (scrollDelta != 0)
         {
-            incrementValue = Math.Sign(scrollDelta) * 5f; // Peso do clique do scroll
+            incrementValue = Math.Sign(scrollDelta) * 1f; // Peso do clique do scroll
         }
-        // B. Fallback para Teclado (Input Contínuo - Segurar a tecla mantém incrementando)
         else 
         {
             if (currentKeyboard.IsKeyDown(Keys.W) || currentKeyboard.IsKeyDown(Keys.Up))
@@ -83,11 +88,11 @@ public class WaveScene : Scene
                 incrementValue = -1f;
         }
 
-        // Envia a instrução para o manager apenas se houve alguma ação
         if (incrementValue != 0f)
         {
             Console.WriteLine($"[incrementValue] {incrementValue}");
             _waveManager.Increment(incrementValue);
+            CheckPrecision();
         }
 
         _waveManager.Update(gameTime);
@@ -95,6 +100,22 @@ public class WaveScene : Scene
         // Salva o estado atual para comparar no próximo frame
         _previousKeyboard = currentKeyboard;
         _previousMouse = currentMouse;
+    }
+
+    private void CheckPrecision()
+    {
+        if (_waveManager.AmplitudeDiff < AMP_THRESHOLD &&
+            _waveManager.FrequencyDiff < FRQ_THRESHOLD &&
+            _waveManager.PhaseDiff < PHA_THRESHOLD)
+        {
+            Reset();
+        }
+    }
+
+    private void Reset()
+    {
+        _gradientManager.ResetTexture();
+        _waveManager.Reset();
     }
 
     public override void Draw(GameTime gameTime)
@@ -109,6 +130,19 @@ public class WaveScene : Scene
 
         Texture2D backgroundTexture = _gradientManager.GetTexture();
         Core.SpriteBatch.Draw(backgroundTexture, viewportRect, Color.White);
+
+        string debugText = 
+        $"Parametro sendo editado: {_waveManager.CurrentParameter}\n" +
+        $"---------Player----------\n" +
+        $"Amplitude: {_waveManager.PlayerParameters.Amplitude:F1}\n" +
+        $"Frequencia: {_waveManager.PlayerParameters.Frequency:F4}\n" +
+        $"Offset de Fase: {_waveManager.PlayerParameters.PhaseOffset:F2}\n" +
+        $"---------Diff----------\n" +
+        $"Amplitude: {_waveManager.AmplitudeDiff:F1}\n" +
+        $"Frequencia: {_waveManager.FrequencyDiff:F4}\n" +
+        $"Offset de Fase: {_waveManager.PhaseDiff:F2} ";
+
+        Core.SpriteBatch.DrawString(_font, debugText, new Vector2(10, 10), Color.Yellow);
 
         Core.SpriteBatch.End();
 

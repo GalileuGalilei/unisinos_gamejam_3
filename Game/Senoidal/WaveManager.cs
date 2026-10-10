@@ -27,8 +27,12 @@ namespace game.Senoidal
         private Wave _targetWave;
         private Wave _playerWave;
 
-        private WaveParameters TargetParameters;
-        private WaveParameters PlayerParameters;
+        public WaveParameters TargetParameters;
+        public WaveParameters PlayerParameters;
+
+        public float AmplitudeDiff;
+        public float FrequencyDiff;
+        public float PhaseDiff;
 
         public EditableParameter CurrentParameter { get; private set; } = EditableParameter.Amplitude;
 
@@ -65,6 +69,7 @@ namespace game.Senoidal
             }
 
             _playerWave.Parameters = PlayerParameters;
+            TargetParameters.CalculateDifference(PlayerParameters, out AmplitudeDiff, out FrequencyDiff, out PhaseDiff);
         }
 
         public WaveManager(Effect waveShader)
