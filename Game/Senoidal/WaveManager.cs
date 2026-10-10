@@ -30,9 +30,15 @@ namespace game.Senoidal
         public WaveParameters TargetParameters;
         public WaveParameters PlayerParameters;
 
+        private const float MAX_AMP_SPAN = MAX_AMPLITUDE - MIN_AMPLITUDE;
+        private const float MAX_FRQ_SPAN = (MAX_FREQUENCY - MIN_FREQUENCY) / 1000f;
+        private const float MAX_PHA_SPAN = (float)Math.PI;
+
         public float AmplitudeDiff;
         public float FrequencyDiff;
         public float PhaseDiff;
+
+        public float InitialWeightedDiff { get; private set; }
 
         public EditableParameter CurrentParameter { get; private set; } = EditableParameter.Amplitude;
 
@@ -72,6 +78,24 @@ namespace game.Senoidal
             TargetParameters.CalculateDifference(PlayerParameters, out AmplitudeDiff, out FrequencyDiff, out PhaseDiff);
         }
 
+        public float CalculateWeightedDiff()
+        {
+            float normAmp = MathHelper.Clamp(AmplitudeDiff / MAX_AMP_SPAN, 0f, 1f);
+            float normFreq = MathHelper.Clamp(FrequencyDiff / MAX_FRQ_SPAN, 0f, 1f);
+            float normPhase = MathHelper.Clamp(PhaseDiff / MAX_PHA_SPAN, 0f, 1f);
+
+            return (normAmp * 0.33f) + (normFreq * 0.34f) + (normPhase * 0.33f);
+        }
+
+        public float GetMatchProgress()
+        {
+            if (InitialWeightedDiff <= 0.0001f) return 1f;
+
+            float currentDiff = CalculateWeightedDiff();
+            float progress = 1.0f - (currentDiff / InitialWeightedDiff);
+            return MathHelper.Clamp(progress, 0.0f, 1.0f);
+        }
+
         public WaveManager(Effect waveShader)
         {
             _random = new Random();
@@ -105,6 +129,10 @@ namespace game.Senoidal
             float playerStarterPhaseOffset = (float)(_random.NextDouble() * Math.PI * 2);
 
             PlayerParameters = new WaveParameters(playerStarterAmplitude, playerStarterFrequency, playerStarterPhaseOffset);
+
+            TargetParameters.CalculateDifference(PlayerParameters, out AmplitudeDiff, out FrequencyDiff, out PhaseDiff);
+            InitialWeightedDiff = CalculateWeightedDiff();
+            if (InitialWeightedDiff < 0.001f) InitialWeightedDiff = 0.001f;
 
             _targetWave = new Wave(Core.GraphicsDevice, _waveShader)
             {
