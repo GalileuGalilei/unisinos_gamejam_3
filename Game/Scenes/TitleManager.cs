@@ -3,13 +3,13 @@ using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
 using MonoGameLibrary;
 using MonoGameLibrary.Graphics;
-using MonoGameLibrary.Scenes;
 using MonoGameLibrary.UI;
-using game.Senoidal;
+using Microsoft.Xna.Framework.Content;
+using System;
 
 namespace game.Scenes;
 
-public class TitleScene : Scene
+public class TitleManager
 {
     private Font _font;
     private Button _startButton;
@@ -17,18 +17,16 @@ public class TitleScene : Scene
     private TextureRegion _overlayRegion;
     private TextureRegion _tituloRegion;
 
-    private InterferenceOverlayManager _overlayManager;
+    public Action StartCallback;
 
-
-    public override void Initialize()
+    public TitleManager(Action startCallback)
     {
-        base.Initialize();
-        Core.ExitOnEscape = true;
-    }
+        StartCallback = startCallback;
+    } 
 
-    public override void LoadContent()
+    public void LoadContent(ContentManager content)
     {
-        _font = new Font(Content.Load<SpriteFont>("fonts/game-font"));
+        _font = new Font(content.Load<SpriteFont>("fonts/game-font"));
         TextureAtlas atlas = TextureAtlas.FromFile(Core.Content, "sprites/atlas-definition.xml");
         _overlayRegion = atlas.GetRegion("overlay");
         _tituloRegion = atlas.GetRegion("titulo_menu");
@@ -60,7 +58,7 @@ public class TitleScene : Scene
             startButtonBounds,
             atlas,
             "comecar",
-            () => Core.ChangeScene(new WaveScene())
+            () => StartCallback()
         );
 
         _exitButton = new Button(
@@ -71,44 +69,26 @@ public class TitleScene : Scene
             "sair",
             () => Core.ExitGame()
         );
-
-        Effect interferenceShader = Content.Load<Effect>("shaders/interferenceShader");
-        _overlayManager = new InterferenceOverlayManager(Core.GraphicsDevice, interferenceShader);
-
-        // Exemplo de como você pode setar os parâmetros visualmente!
-        _overlayManager.TargetOpacity = 0.05f;
-        _overlayManager.TargetBaseColor = Color.LightGray;
-
-        _overlayManager.PlayerOpacity = 0.05f;
-        _overlayManager.PlayerBaseColor = Color.Cyan; // Pode testar cores diferentes aqui
     }
 
-    public override void Update(GameTime gameTime)
+    public void Update()
     {
         _startButton.Update(Core.Input.Mouse);
         _exitButton.Update(Core.Input.Mouse);
 
-        // Keep Enter as a keyboard shortcut for the start button.
         if (Core.Input.Keyboard.WasKeyJustPressed(Keys.Enter))
         {
             _startButton.Activate();
         }
     }
 
-    public override void Draw(GameTime gameTime)
+    public void Draw()
     {
-        Core.GraphicsDevice.Clear(new Color(32, 40, 78, 255));
-
         Core.SpriteBatch.Begin(samplerState: SamplerState.PointClamp);
         _overlayRegion.Draw(Core.SpriteBatch, new Vector2(0, 0), Color.White, 0, Vector2.Zero, new Vector2(1f, 1f), SpriteEffects.None, 0);
         _startButton.Draw(Core.SpriteBatch);
         _exitButton.Draw(Core.SpriteBatch);
         _tituloRegion.Draw(Core.SpriteBatch, new Vector2(40, 20), Color.White, 0, Vector2.Zero, new Vector2(0.5f, 0.5f), SpriteEffects.None, 0);
         Core.SpriteBatch.End();
-    }
-
-    public override void UnloadContent()
-    {
-        base.UnloadContent();
     }
 }

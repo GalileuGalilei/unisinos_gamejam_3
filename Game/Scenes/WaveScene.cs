@@ -18,6 +18,7 @@ public class WaveScene : Scene
     private WaveManager _waveManager;
     private AudioManager _audioManager;
     private InterferenceOverlayManager _overlayManager;
+    private TitleManager _titleManager;
     private WaveInput _input;
 
     private SpriteFont _font;
@@ -28,6 +29,7 @@ public class WaveScene : Scene
     private RadialButton _radialButtonPhase;
 
     private bool _showDebug = false;
+    private bool _isTitle = true;
 
     public override void Initialize()
     {
@@ -67,30 +69,44 @@ public class WaveScene : Scene
 
         _audioManager = new AudioManager();
         _audioManager.LoadContent(Content);
+
+        _titleManager = new TitleManager(StartGame);
+        _titleManager.LoadContent(Content);
+    }
+
+    private void StartGame()
+    {
+        _isTitle = false;
+        CompleteLevel();
     }
 
     public override void Update(GameTime gameTime)
     {
         _input.Update();
 
+        if (_isTitle)
+        {
+            _titleManager.Update();
+        }
+
         // VOLTA PRA TELA INICIAL
         if (_input.BackRequested)
         {
-            _audioManager.Stop();
-            Core.ChangeScene(new TitleScene());
+            _isTitle = true;
+            return;
         }
 
         // PULA PRA PROXIMA FASE (SIPA REMOVER DEPOIS)
-        if (_input.SkipRequested)
-        {
-            CompleteLevel();
-        }
+        // if (_input.SkipRequested)
+        // {
+        //     CompleteLevel();
+        // }
 
         // MOSTRA O DEBUG
-        if (_input.ToggleDebugRequested)
-        {
-            _showDebug = !_showDebug;
-        }
+        // if (_input.ToggleDebugRequested)
+        // {
+        //     _showDebug = !_showDebug;
+        // }
 
         // Teclado/scroll: parâmetro selecionado
         if (_input.ParameterChange != 0)
@@ -171,14 +187,24 @@ public class WaveScene : Scene
 
         Core.SpriteBatch.End();
 
-        _waveManager.Draw(Core.SpriteBatch);
+        if (!_isTitle)
+        {
+            _waveManager.Draw(Core.SpriteBatch);
+        }
         _overlayManager.Draw(Core.SpriteBatch);
 
-        Core.SpriteBatch.Begin();
-        _overlay.Draw(Core.SpriteBatch, Vector2.Zero, Color.White);
-        _radialButtonAmplitude.Draw();
-        _radialButtonFrequency.Draw();
-        _radialButtonPhase.Draw();
-        Core.SpriteBatch.End();
+        if (_isTitle)
+        {
+            _titleManager.Draw();
+        }
+        else
+        {
+            Core.SpriteBatch.Begin();
+            _overlay.Draw(Core.SpriteBatch, Vector2.Zero, Color.White);
+            _radialButtonAmplitude.Draw();
+            _radialButtonFrequency.Draw();
+            _radialButtonPhase.Draw();
+            Core.SpriteBatch.End();
+        }
     }
 }
