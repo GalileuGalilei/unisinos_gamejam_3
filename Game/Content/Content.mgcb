@@ -20,12 +20,19 @@
 /processorParam:Version=3.8.6.0
 /build:audio/ambient_loop.wav
 
-#begin audio/click_sfx.mp3
-/importer:Mp3Importer
+#begin audio/click_sfx.wav
+/importer:WavImporter
 /processor:SoundEffectProcessor
 /processorParam:Quality=Best
 /processorParam:Version=3.8.6.0
-/build:audio/click_sfx.mp3
+/build:audio/click_sfx.wav
+
+#begin audio/static_loop.wav
+/importer:WavImporter
+/processor:SoundEffectProcessor
+/processorParam:Quality=Best
+/processorParam:Version=3.8.6.0
+/build:audio/static_loop.wav
 
 #begin fonts/game-font.spritefont
 /importer:FontDescriptionImporter
