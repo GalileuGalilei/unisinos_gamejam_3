@@ -7,6 +7,13 @@ namespace game.Senoidal
 {
     public class WaveManager
     {
+        public enum EditableParameter
+        {
+            Amplitude,
+            Frequency,
+            PhaseOffset
+        }
+
         private const int MIN_AMPLITUDE = 10;
         private const int MAX_AMPLITUDE = 200;
         private const int MIN_FREQUENCY = 1;
@@ -14,7 +21,6 @@ namespace game.Senoidal
 
         private const float WAVE_SPEED = 1.5f;
 
-        private GraphicsDevice _graphicsDevice;
         private Random _random;
 
         private Effect _waveShader;
@@ -24,9 +30,45 @@ namespace game.Senoidal
         private WaveParameters TargetParameters;
         private WaveParameters PlayerParameters;
 
-        public WaveManager(GraphicsDevice graphicsDevice, Effect waveShader)
+        public EditableParameter CurrentParameter { get; private set; } = EditableParameter.Amplitude;
+
+        public void ChangeParameter(int direction)
         {
-            _graphicsDevice = graphicsDevice;
+            int totalParameters = Enum.GetValues(typeof(EditableParameter)).Length;
+            int nextValue = ((int)CurrentParameter + direction + totalParameters) % totalParameters;
+            CurrentParameter = (EditableParameter)nextValue;
+            Console.WriteLine($"[CurrentParameter] {CurrentParameter}");
+        }
+
+        public void Increment(float amount)
+        {
+            switch (CurrentParameter)
+            {
+                case EditableParameter.Amplitude:
+                    PlayerParameters.Amplitude += amount * 1.5f; 
+                    PlayerParameters.Amplitude = MathHelper.Clamp(PlayerParameters.Amplitude, MIN_AMPLITUDE, MAX_AMPLITUDE);
+                    break;
+
+                case EditableParameter.Frequency:
+                    PlayerParameters.Frequency += amount * 0.0001f;
+                    PlayerParameters.Frequency = MathHelper.Clamp(PlayerParameters.Frequency, MIN_FREQUENCY / 1000f, MAX_FREQUENCY / 1000f);
+                    break;
+
+                case EditableParameter.PhaseOffset:
+                    // Fase trabalha em radianos (escala de 0 a ~6.28)
+                    PlayerParameters.PhaseOffset += amount * 0.05f;
+                    
+                    // Mantém o valor circular dentro de 0 a 2*PI
+                    float twoPi = (float)(Math.PI * 2);
+                    PlayerParameters.PhaseOffset = (PlayerParameters.PhaseOffset % twoPi + twoPi) % twoPi;
+                    break;
+            }
+
+            _playerWave.Parameters = PlayerParameters;
+        }
+
+        public WaveManager(Effect waveShader)
+        {
             _random = new Random();
             _waveShader = waveShader;
 
