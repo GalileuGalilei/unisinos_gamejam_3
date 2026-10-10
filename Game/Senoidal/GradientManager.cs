@@ -33,7 +33,6 @@ namespace game.Senoidal
             _lastIndex = gradientIndex;
 
             _gradientTexture.SetData(GradientLibrary.GetGradient(gradientIndex));
-            Console.WriteLine($"[GradientIndex] {gradientIndex}");
         }
 
         public Texture2D GetTexture()

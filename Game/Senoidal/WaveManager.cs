@@ -16,87 +16,71 @@ namespace game.Senoidal
 
         private const int MIN_AMPLITUDE = 10;
         private const int MAX_AMPLITUDE = 50;
-        private const int MIN_FREQUENCY = 1;
+        private const int MIN_FREQUENCY = 10;
         private const int MAX_FREQUENCY = 40;
 
         private const float WAVE_SPEED = 1.5f;
-        private const float AMPLITUDE_PER_RADIAN = 10f;
-        private const float FREQUENCY_PER_RADIAN = 0.004f;
 
-        private Random _random;
+        // Sensibilidade do teclado/scroll (por passo)
+        private const float AMPLITUDE_PER_STEP = 1.5f;
+        private const float FREQUENCY_PER_STEP = 0.0001f;
+        private const float PHASE_PER_STEP = 0.05f;
 
-        private Effect _waveShader;
-        private Wave _targetWave;
-        private Wave _playerWave;
-        
-        public Wave TargetWave => _targetWave;
-        public Wave PlayerWave => _playerWave;
-
-        public WaveParameters TargetParameters;
-        public WaveParameters PlayerParameters;
+        // Sensibilidade dos botões radiais (por radiano girado)
+        private const float AMPLITUDE_PER_RADIAN = 20f;
+        private const float FREQUENCY_PER_RADIAN = 0.001f;
+        private const float PHASE_PER_RADIAN = 1f;
 
         private const float MAX_AMP_SPAN = MAX_AMPLITUDE - MIN_AMPLITUDE;
         private const float MAX_FRQ_SPAN = (MAX_FREQUENCY - MIN_FREQUENCY) / 1000f;
         private const float MAX_PHA_SPAN = (float)Math.PI;
+        private const float TWO_PI = (float)(Math.PI * 2);
+
+        private readonly Random _random = new Random();
+
+        public Wave TargetWave { get; }
+        public Wave PlayerWave { get; }
+
+        public WaveParameters TargetParameters;
+        public WaveParameters PlayerParameters;
 
         public float AmplitudeDiff;
         public float FrequencyDiff;
         public float PhaseDiff;
 
-        public void RotateAmplitude(float rotationDelta)
-        {
-            PlayerParameters.Amplitude += rotationDelta * AMPLITUDE_PER_RADIAN;
-            PlayerParameters.Amplitude = MathHelper.Clamp(PlayerParameters.Amplitude, MIN_AMPLITUDE, MAX_AMPLITUDE);
-            UpdatePlayerWaveParameters();
-        }
-
-        public void RotateFrequency(float rotationDelta)
-        {
-            PlayerParameters.Frequency += rotationDelta * FREQUENCY_PER_RADIAN;
-            PlayerParameters.Frequency = MathHelper.Clamp(PlayerParameters.Frequency, MIN_FREQUENCY / 1000f, MAX_FREQUENCY / 1000f);
-            UpdatePlayerWaveParameters();
-        }
-
-        public void RotatePhaseOffset(float rotationDelta)
-        {
-            float twoPi = (float)(Math.PI * 2);
-            PlayerParameters.PhaseOffset = (PlayerParameters.PhaseOffset + rotationDelta + twoPi) % twoPi;
-            UpdatePlayerWaveParameters();
-        }
-
-        private void UpdatePlayerWaveParameters()
-        {
-            _playerWave.Parameters = PlayerParameters;
-            TargetParameters.CalculateDifference(PlayerParameters, out AmplitudeDiff, out FrequencyDiff, out PhaseDiff);
-        }
-
         public float InitialWeightedDiff { get; private set; }
 
         public EditableParameter CurrentParameter { get; private set; } = EditableParameter.Amplitude;
 
-        public float TargetBandCount 
+        public WaveManager(Effect waveShader)
         {
-            get 
+            // As ondas são criadas uma única vez; o Reset() só troca os parâmetros.
+            TargetWave = new Wave(Core.GraphicsDevice, waveShader)
             {
-                int screenWidth = Core.GraphicsDevice.Viewport.Width;
-                return screenWidth * PlayerParameters.Frequency * 2.0f;
-            }
+                Speed = WAVE_SPEED,
+                Color = Color.Silver,
+                Thickness = 4.0f,
+                IsDotted = true
+            };
+
+            PlayerWave = new Wave(Core.GraphicsDevice, waveShader)
+            {
+                Speed = WAVE_SPEED,
+                Color = Color.White,
+                Thickness = 4.0f,
+                IsDotted = false
+            };
+
+            Reset();
         }
 
-        public float TargetInterferencePhase 
-        {
-            get 
-            {
-                return PlayerWave.Phase + PlayerParameters.PhaseOffset;
-            }
-        }
+        // ---------- Controle: teclado/scroll (parâmetro selecionado) ----------
 
         public void ChangeParameter(int direction)
         {
             int totalParameters = Enum.GetValues(typeof(EditableParameter)).Length;
             int nextValue = ((int)CurrentParameter + direction + totalParameters) % totalParameters;
             CurrentParameter = (EditableParameter)nextValue;
-            Console.WriteLine($"[CurrentParameter] {CurrentParameter}");
         }
 
         public void Increment(float amount)
@@ -104,29 +88,59 @@ namespace game.Senoidal
             switch (CurrentParameter)
             {
                 case EditableParameter.Amplitude:
-                    PlayerParameters.Amplitude += amount * 1.5f; 
-                    PlayerParameters.Amplitude = MathHelper.Clamp(PlayerParameters.Amplitude, MIN_AMPLITUDE, MAX_AMPLITUDE);
+                    AdjustAmplitude(amount * AMPLITUDE_PER_STEP);
                     break;
-
                 case EditableParameter.Frequency:
-                    PlayerParameters.Frequency += amount * 0.0001f;
-                    PlayerParameters.Frequency = MathHelper.Clamp(PlayerParameters.Frequency, MIN_FREQUENCY / 1000f, MAX_FREQUENCY / 1000f);
+                    AdjustFrequency(amount * FREQUENCY_PER_STEP);
                     break;
-
                 case EditableParameter.PhaseOffset:
-                    // Fase trabalha em radianos (escala de 0 a ~6.28)
-                    PlayerParameters.PhaseOffset += amount * 0.05f;
-                    
-                    // Mantém o valor circular dentro de 0 a 2*PI
-                    float twoPi = (float)(Math.PI * 2);
-                    PlayerParameters.PhaseOffset = (PlayerParameters.PhaseOffset % twoPi + twoPi) % twoPi;
+                    AdjustPhaseOffset(amount * PHASE_PER_STEP);
                     break;
             }
+        }
 
+        // ---------- Controle: botões radiais ----------
+
+        public void RotateAmplitude(float rotationDelta) => AdjustAmplitude(rotationDelta * AMPLITUDE_PER_RADIAN);
+        public void RotateFrequency(float rotationDelta) => AdjustFrequency(rotationDelta * FREQUENCY_PER_RADIAN);
+        public void RotatePhaseOffset(float rotationDelta) => AdjustPhaseOffset(rotationDelta * PHASE_PER_RADIAN);
+
+        // ---------- Lógica compartilhada ----------
+
+        private void AdjustAmplitude(float delta)
+        {
+            if (delta == 0f) return;
+            PlayerParameters.Amplitude = MathHelper.Clamp(PlayerParameters.Amplitude + delta, MIN_AMPLITUDE, MAX_AMPLITUDE);
+            UpdatePlayerWaveParameters();
+        }
+
+        private void AdjustFrequency(float delta)
+        {
+            if (delta == 0f) return;
+            PlayerParameters.Frequency = MathHelper.Clamp(PlayerParameters.Frequency + delta, MIN_FREQUENCY / 1000f, MAX_FREQUENCY / 1000f);
+            UpdatePlayerWaveParameters();
+        }
+
+        private void AdjustPhaseOffset(float delta)
+        {
+            if (delta == 0f) return;
+            // Fase trabalha em radianos; mantém o valor circular dentro de 0 a 2*PI
+            float phase = PlayerParameters.PhaseOffset + delta;
+            PlayerParameters.PhaseOffset = (phase % TWO_PI + TWO_PI) % TWO_PI;
+            UpdatePlayerWaveParameters();
+        }
+
+        private void UpdatePlayerWaveParameters()
+        {
             PlayerWave.Parameters = PlayerParameters;
             TargetParameters.CalculateDifference(PlayerParameters, out AmplitudeDiff, out FrequencyDiff, out PhaseDiff);
         }
 
+        // ---------- Métricas ----------
+
+        /// <summary>
+        /// Erro normalizado (0 = idêntico, 1 = máximo) entre a onda do player e a alvo.
+        /// </summary>
         public float CalculateWeightedDiff()
         {
             float normAmp = MathHelper.Clamp(AmplitudeDiff / MAX_AMP_SPAN, 0f, 1f);
@@ -136,6 +150,9 @@ namespace game.Senoidal
             return (normAmp * 0.33f) + (normFreq * 0.34f) + (normPhase * 0.33f);
         }
 
+        /// <summary>
+        /// Progresso de 0 (tão longe quanto no início da fase, ou mais) até 1 (idêntico).
+        /// </summary>
         public float GetMatchProgress()
         {
             if (InitialWeightedDiff <= 0.0001f) return 1f;
@@ -145,68 +162,52 @@ namespace game.Senoidal
             return MathHelper.Clamp(progress, 0.0f, 1.0f);
         }
 
-        public WaveManager(Effect waveShader)
-        {
-            _random = new Random();
-            _waveShader = waveShader;
-
-            Reset();      
-        }
+        // ---------- Ciclo de vida ----------
 
         public void Update(GameTime gameTime)
         {
-            _targetWave.Update(gameTime);
-            _playerWave.Update(gameTime);
+            TargetWave.Update(gameTime);
+            PlayerWave.Update(gameTime);
         }
 
         public void Reset()
         {
-            float targetAmplitude = _random.Next(MIN_AMPLITUDE, MAX_AMPLITUDE);
-            float targetFrequency = _random.Next(MIN_FREQUENCY, MAX_FREQUENCY) / 1000f;
-            float targetPhaseOffset = (float)(_random.NextDouble() * Math.PI * 2);
+            TargetParameters = RandomParameters();
+            PlayerParameters = RandomParameters();
 
-            TargetParameters = new WaveParameters(targetAmplitude, targetFrequency, targetPhaseOffset);
+            TargetWave.Parameters = TargetParameters;
+            TargetWave.DotSpacing = CalculateDotSpacing(TargetParameters);
+            TargetWave.Phase = 0f;
 
-            float baseDotSpacing = 12f;
-            float maxSlope = (float)(targetAmplitude * 2 * Math.PI * targetFrequency);
-            float averageSlope = maxSlope / (float)Math.Sqrt(2);
-            float stretchFactor = (float)Math.Sqrt(1 + (averageSlope * averageSlope));
-            float dotSpacing = baseDotSpacing / stretchFactor;
+            PlayerWave.Phase = 0f;
+            UpdatePlayerWaveParameters();
 
-            float playerStarterAmplitude = _random.Next(MIN_AMPLITUDE, MAX_AMPLITUDE);
-            float playerStarterFrequency = _random.Next(MIN_FREQUENCY, MAX_FREQUENCY) / 1000f;
-            float playerStarterPhaseOffset = (float)(_random.NextDouble() * Math.PI * 2);
-
-            PlayerParameters = new WaveParameters(playerStarterAmplitude, playerStarterFrequency, playerStarterPhaseOffset);
-
-            TargetParameters.CalculateDifference(PlayerParameters, out AmplitudeDiff, out FrequencyDiff, out PhaseDiff);
             InitialWeightedDiff = CalculateWeightedDiff();
             if (InitialWeightedDiff < 0.001f) InitialWeightedDiff = 0.001f;
+        }
 
-            _targetWave = new Wave(Core.GraphicsDevice, _waveShader)
-            {
-                Parameters = TargetParameters,
-                Speed = WAVE_SPEED,
-                Color = Color.WhiteSmoke,
-                Thickness = 4.0f,
-                IsDotted = true,
-                DotSpacing = dotSpacing
-            };
+        private WaveParameters RandomParameters()
+        {
+            float amplitude = _random.Next(MIN_AMPLITUDE, MAX_AMPLITUDE);
+            float frequency = _random.Next(MIN_FREQUENCY, MAX_FREQUENCY) / 1000f;
+            float phaseOffset = (float)(_random.NextDouble() * TWO_PI);
+            return new WaveParameters(amplitude, frequency, phaseOffset);
+        }
 
-            _playerWave = new Wave(Core.GraphicsDevice, _waveShader)
-            {
-                Parameters = PlayerParameters,
-                Speed = WAVE_SPEED,
-                Color = Color.White,
-                Thickness = 4.0f,
-                IsDotted = false
-            };   
+        // Compensa o "esticamento" dos pontos em ondas mais inclinadas
+        private static float CalculateDotSpacing(WaveParameters parameters)
+        {
+            const float baseDotSpacing = 12f;
+            float maxSlope = (float)(parameters.Amplitude * TWO_PI * parameters.Frequency);
+            float averageSlope = maxSlope / (float)Math.Sqrt(2);
+            float stretchFactor = (float)Math.Sqrt(1 + (averageSlope * averageSlope));
+            return baseDotSpacing / stretchFactor;
         }
 
         public void Draw(SpriteBatch spriteBatch)
         {
-            _targetWave.Draw(Core.SpriteBatch);
-            _playerWave.Draw(Core.SpriteBatch);
+            TargetWave.Draw(spriteBatch);
+            PlayerWave.Draw(spriteBatch);
         }
     }
 }

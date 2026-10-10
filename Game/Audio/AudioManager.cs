@@ -27,8 +27,6 @@ namespace game.Audio
 
         public float CurrentVolume => _currentVolume;
         public float CurrentStaticVolume => _currentStaticVolume;
-        public float MinVolume => MIN_VOLUME;
-        public float MaxVolume => MAX_VOLUME;
 
         public void LoadContent(ContentManager content)
         {
