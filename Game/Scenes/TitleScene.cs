@@ -59,7 +59,7 @@ public class TitleScene : Scene
             startButtonBounds,
             atlas,
             "comecar",
-            () => Core.ChangeScene(new GameScene())
+            () => Core.ChangeScene(new WaveScene())
         );
 
         _exitButton = new Button(

@@ -1,39 +1,29 @@
-using System;
 using Microsoft.Xna.Framework;
-using Microsoft.Xna.Framework.Audio;
 using Microsoft.Xna.Framework.Graphics;
-using Microsoft.Xna.Framework.Input;
 using MonoGameLibrary;
 using MonoGameLibrary.Graphics;
-using MonoGameLibrary.Input;
 using MonoGameLibrary.Scenes;
-using game.Senoidal;
-using game.Audio;
-using System.Diagnostics;
 using MonoGameLibrary.UI;
+using game.Audio;
+using game.Input;
+using game.Senoidal;
 
 namespace game.Scenes;
 
 public class WaveScene : Scene
 {
     private const float AMP_THRESHOLD = 4f;
-    private const float FRQ_THRESHOLD = 0.0001f;
+    private const float FRQ_THRESHOLD = 0.0009f;
     private const float PHA_THRESHOLD = 0.09f;
 
     private GradientManager _gradientManager;
     private WaveManager _waveManager;
     private AudioManager _audioManager;
-
     private InterferenceOverlayManager _overlayManager;
-
-    private KeyboardState _previousKeyboard;
-    private MouseState _previousMouse;
+    private WaveInput _input;
 
     private SpriteFont _font;
-
-    private TextureAtlas _atlas;
     private TextureRegion _overlay;
-    private TextureRegion _radialButtonRegion;
 
     private RadialButton _radialButtonAmplitude;
     private RadialButton _radialButtonPhase;
@@ -50,135 +40,81 @@ public class WaveScene : Scene
 
     public override void LoadContent()
     {
+        _font = Content.Load<SpriteFont>("fonts/game-font");
+
         _gradientManager = new GradientManager();
 
         Effect waveShader = Content.Load<Effect>("shaders/WaveShader");
         _waveManager = new WaveManager(waveShader);
 
-        _atlas = TextureAtlas.FromFile(Core.Content, "sprites/atlas-definition.xml");
-        _overlay = _atlas.GetRegion("overlay");
-        _radialButtonRegion = _atlas.GetRegion("botao_radial");
-        _radialButtonAmplitude = new RadialButton(_radialButtonRegion, new Rectangle(205, 20,  40, 40));
-        _radialButtonPhase = new RadialButton(_radialButtonRegion,     new Rectangle(205, 70,  40, 40));
-        _radialButtonFrequency = new RadialButton(_radialButtonRegion, new Rectangle(205, 120, 40, 40));
-        _gradientManager = new GradientManager();
-        _font = Content.Load<SpriteFont>("fonts/game-font");
+        // UI: moldura e botões radiais
+        TextureAtlas atlas = TextureAtlas.FromFile(Core.Content, "sprites/atlas-definition.xml");
+        _overlay = atlas.GetRegion("overlay");
+        TextureRegion radialButtonRegion = atlas.GetRegion("botao_radial");
+        _radialButtonAmplitude = new RadialButton(radialButtonRegion, new Rectangle(200, 20,  40, 40));
+        _radialButtonPhase     = new RadialButton(radialButtonRegion, new Rectangle(200, 70,  40, 40));
+        _radialButtonFrequency = new RadialButton(radialButtonRegion, new Rectangle(200, 120, 40, 40));
 
+        _input = new WaveInput(_radialButtonAmplitude, _radialButtonFrequency, _radialButtonPhase);
+
+        // Interferência visual: as ondas são criadas uma vez só pelo WaveManager,
+        // então basta associá-las aqui.
         Effect interferenceShader = Content.Load<Effect>("shaders/interferenceShader");
         _overlayManager = new InterferenceOverlayManager(Core.GraphicsDevice, interferenceShader);
-        
-        // Associa as ondas criadas pelo WaveManager ao OverlayManager
         _overlayManager.UpdateWaves(_waveManager.TargetWave, _waveManager.PlayerWave);
-
-        // Exemplo de como você pode setar os parâmetros visualmente!
         _overlayManager.TargetOpacity = 0.05f;
         _overlayManager.TargetBaseColor = Color.LightGray;
-
         _overlayManager.PlayerOpacity = 0.05f;
-        _overlayManager.PlayerBaseColor = Color.Cyan; // Pode testar cores diferentes aqui
+        _overlayManager.PlayerBaseColor = Color.Cyan;
+
         _audioManager = new AudioManager();
         _audioManager.LoadContent(Content);
     }
 
     public override void Update(GameTime gameTime)
     {
-        KeyboardState currentKeyboard = Keyboard.GetState();
-        MouseState currentMouse = Mouse.GetState();
+        _input.Update();
 
         // VOLTA PRA TELA INICIAL
-        if (Core.Input.Keyboard.WasKeyJustPressed(Keys.Escape))
+        if (_input.BackRequested)
         {
             _audioManager.Stop();
             Core.ChangeScene(new TitleScene());
         }
 
         // PULA PRA PROXIMA FASE (SIPA REMOVER DEPOIS)
-        if (Core.Input.Keyboard.WasKeyJustPressed(Keys.Space))
+        if (_input.SkipRequested)
         {
-            _audioManager.PlayLevelCompleteJuice();
-            Reset();
+            CompleteLevel();
         }
 
         // MOSTRA O DEBUG
-        if (Core.Input.Keyboard.WasKeyJustPressed(Keys.F2))
+        if (_input.ToggleDebugRequested)
         {
             _showDebug = !_showDebug;
         }
 
-        // TROCAR PARÂMETRO
-        if (currentKeyboard.IsKeyDown(Keys.D) && _previousKeyboard.IsKeyUp(Keys.D) || 
-            currentKeyboard.IsKeyDown(Keys.Right) && _previousKeyboard.IsKeyUp(Keys.Right))
+        // Teclado/scroll: parâmetro selecionado
+        if (_input.ParameterChange != 0)
         {
-            _waveManager.ChangeParameter(1);
+            _waveManager.ChangeParameter(_input.ParameterChange);
         }
-        else if (currentKeyboard.IsKeyDown(Keys.A) && _previousKeyboard.IsKeyUp(Keys.A) || 
-                currentKeyboard.IsKeyDown(Keys.Left) && _previousKeyboard.IsKeyUp(Keys.Left))
-        {
-            _waveManager.ChangeParameter(-1);
-        }
+        _waveManager.Increment(_input.SelectedParameterDelta);
 
-        // INCREMENTAR/DECREMENTAR VALOR
-        float incrementValue = 0f;
+        // Botões radiais: cada um controla um parâmetro
+        _waveManager.RotateAmplitude(_input.AmplitudeRotation);
+        _waveManager.RotateFrequency(_input.FrequencyRotation);
+        _waveManager.RotatePhaseOffset(_input.PhaseRotation);
 
-        int scrollDelta = currentMouse.ScrollWheelValue - _previousMouse.ScrollWheelValue;
-        if (scrollDelta != 0)
-        {
-            incrementValue = Math.Sign(scrollDelta) * 1f; // Peso do clique do scroll
-        }
-        else 
-        {
-            if (currentKeyboard.IsKeyDown(Keys.W) || currentKeyboard.IsKeyDown(Keys.Up))
-                incrementValue = 1f;
-            if (currentKeyboard.IsKeyDown(Keys.S) || currentKeyboard.IsKeyDown(Keys.Down))
-                incrementValue = -1f;
-        }
-
-        if (incrementValue != 0f)
-        {
-            Console.WriteLine($"[incrementValue] {incrementValue}");
-            _waveManager.Increment(incrementValue);
-            CheckPrecision();
-        }
-
-        _radialButtonAmplitude.Update(Core.Input.Mouse);
-        _radialButtonPhase.Update(Core.Input.Mouse);
-        _radialButtonFrequency.Update(Core.Input.Mouse);
-
-        _waveManager.RotateAmplitude(_radialButtonAmplitude.RotationDelta);
-        _waveManager.RotatePhaseOffset(_radialButtonPhase.RotationDelta);
-        _waveManager.RotateFrequency(_radialButtonFrequency.RotationDelta);
-
-        if (_radialButtonAmplitude.RotationDelta != 0f ||
-            _radialButtonPhase.RotationDelta != 0f ||
-            _radialButtonFrequency.RotationDelta != 0f)
+        if (_input.HasWaveAdjustment)
         {
             CheckPrecision();
         }
 
         _waveManager.Update(gameTime);
 
-        float maxAmpDiff = 190f;
-        float maxFreqDiff = 0.009f;
-        float maxPhaseDiff = (float)Math.PI;
-
-        float normAmp = MathHelper.Clamp(_waveManager.AmplitudeDiff / maxAmpDiff, 0f, 1f);
-        float normFreq = MathHelper.Clamp(_waveManager.FrequencyDiff / maxFreqDiff, 0f, 1f);
-        float normPhase = MathHelper.Clamp(_waveManager.PhaseDiff / maxPhaseDiff, 0f, 1f);
-
-        float totalError = (normAmp + normFreq + normPhase) / 3f;
-
-        if (_overlayManager != null)
-        {
-            _overlayManager.PlayerErrorLevel = totalError;
-        }
-
-
-        bool isInteracting = (incrementValue != 0f);
-        _audioManager.Update(gameTime, _waveManager.GetMatchProgress(), isInteracting);
-
-        // Salva o estado atual para comparar no próximo frame
-        _previousKeyboard = currentKeyboard;
-        _previousMouse = currentMouse;
+        _overlayManager.PlayerErrorLevel = _waveManager.CalculateWeightedDiff();
+        _audioManager.Update(gameTime, _waveManager.GetMatchProgress(), _input.HasWaveAdjustment);
     }
 
     private void CheckPrecision()
@@ -187,20 +123,15 @@ public class WaveScene : Scene
             _waveManager.FrequencyDiff < FRQ_THRESHOLD &&
             _waveManager.PhaseDiff < PHA_THRESHOLD)
         {
-            _audioManager.PlayLevelCompleteJuice();
-            Reset();
+            CompleteLevel();
         }
     }
 
-    private void Reset()
+    private void CompleteLevel()
     {
+        _audioManager.PlayLevelCompleteJuice();
         _gradientManager.ResetTexture();
         _waveManager.Reset();
-
-        if (_overlayManager != null)
-        {
-            _overlayManager.UpdateWaves(_waveManager.TargetWave, _waveManager.PlayerWave);
-        }
     }
 
     public override void UnloadContent()
@@ -245,11 +176,7 @@ public class WaveScene : Scene
         Core.SpriteBatch.End();
 
         _waveManager.Draw(Core.SpriteBatch);
-
-        if (_overlayManager != null)
-        {
-            _overlayManager.Draw(Core.SpriteBatch);
-        }
+        _overlayManager.Draw(Core.SpriteBatch);
 
         Core.SpriteBatch.Begin();
         _overlay.Draw(Core.SpriteBatch, Vector2.Zero, Color.White);
