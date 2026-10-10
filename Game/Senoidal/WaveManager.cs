@@ -7,6 +7,13 @@ namespace game.Senoidal
 {
     public class WaveManager
     {
+        public enum EditableParameter
+        {
+            Amplitude,
+            Frequency,
+            PhaseOffset
+        }
+
         private const int MIN_AMPLITUDE = 10;
         private const int MAX_AMPLITUDE = 200;
         private const int MIN_FREQUENCY = 1;
@@ -21,9 +28,16 @@ namespace game.Senoidal
         private Effect _waveShader;
         private Wave _targetWave;
         private Wave _playerWave;
+        
+        public Wave TargetWave => _targetWave;
+        public Wave PlayerWave => _playerWave;
 
         public WaveParameters TargetParameters;
         public WaveParameters PlayerParameters;
+
+        private const float MAX_AMP_SPAN = MAX_AMPLITUDE - MIN_AMPLITUDE;
+        private const float MAX_FRQ_SPAN = (MAX_FREQUENCY - MIN_FREQUENCY) / 1000f;
+        private const float MAX_PHA_SPAN = (float)Math.PI;
 
         public float AmplitudeDiff;
         public float FrequencyDiff;
@@ -54,6 +68,81 @@ namespace game.Senoidal
         {
             _playerWave.Parameters = PlayerParameters;
             TargetParameters.CalculateDifference(PlayerParameters, out AmplitudeDiff, out FrequencyDiff, out PhaseDiff);
+        }
+
+        public float InitialWeightedDiff { get; private set; }
+
+        public EditableParameter CurrentParameter { get; private set; } = EditableParameter.Amplitude;
+
+        public float TargetBandCount 
+        {
+            get 
+            {
+                int screenWidth = Core.GraphicsDevice.Viewport.Width;
+                return screenWidth * PlayerParameters.Frequency * 2.0f;
+            }
+        }
+
+        public float TargetInterferencePhase 
+        {
+            get 
+            {
+                return PlayerWave.Phase + PlayerParameters.PhaseOffset;
+            }
+        }
+
+        public void ChangeParameter(int direction)
+        {
+            int totalParameters = Enum.GetValues(typeof(EditableParameter)).Length;
+            int nextValue = ((int)CurrentParameter + direction + totalParameters) % totalParameters;
+            CurrentParameter = (EditableParameter)nextValue;
+            Console.WriteLine($"[CurrentParameter] {CurrentParameter}");
+        }
+
+        public void Increment(float amount)
+        {
+            switch (CurrentParameter)
+            {
+                case EditableParameter.Amplitude:
+                    PlayerParameters.Amplitude += amount * 1.5f; 
+                    PlayerParameters.Amplitude = MathHelper.Clamp(PlayerParameters.Amplitude, MIN_AMPLITUDE, MAX_AMPLITUDE);
+                    break;
+
+                case EditableParameter.Frequency:
+                    PlayerParameters.Frequency += amount * 0.0001f;
+                    PlayerParameters.Frequency = MathHelper.Clamp(PlayerParameters.Frequency, MIN_FREQUENCY / 1000f, MAX_FREQUENCY / 1000f);
+                    break;
+
+                case EditableParameter.PhaseOffset:
+                    // Fase trabalha em radianos (escala de 0 a ~6.28)
+                    PlayerParameters.PhaseOffset += amount * 0.05f;
+                    
+                    // Mantém o valor circular dentro de 0 a 2*PI
+                    float twoPi = (float)(Math.PI * 2);
+                    PlayerParameters.PhaseOffset = (PlayerParameters.PhaseOffset % twoPi + twoPi) % twoPi;
+                    break;
+            }
+
+            PlayerWave.Parameters = PlayerParameters;
+            TargetParameters.CalculateDifference(PlayerParameters, out AmplitudeDiff, out FrequencyDiff, out PhaseDiff);
+        }
+
+        public float CalculateWeightedDiff()
+        {
+            float normAmp = MathHelper.Clamp(AmplitudeDiff / MAX_AMP_SPAN, 0f, 1f);
+            float normFreq = MathHelper.Clamp(FrequencyDiff / MAX_FRQ_SPAN, 0f, 1f);
+            float normPhase = MathHelper.Clamp(PhaseDiff / MAX_PHA_SPAN, 0f, 1f);
+
+            return (normAmp * 0.33f) + (normFreq * 0.34f) + (normPhase * 0.33f);
+        }
+
+        public float GetMatchProgress()
+        {
+            if (InitialWeightedDiff <= 0.0001f) return 1f;
+
+            float currentDiff = CalculateWeightedDiff();
+            float progress = 1.0f - (currentDiff / InitialWeightedDiff);
+            return MathHelper.Clamp(progress, 0.0f, 1.0f);
         }
 
         public WaveManager(Effect waveShader)
@@ -89,6 +178,10 @@ namespace game.Senoidal
             float playerStarterPhaseOffset = (float)(_random.NextDouble() * Math.PI * 2);
 
             PlayerParameters = new WaveParameters(playerStarterAmplitude, playerStarterFrequency, playerStarterPhaseOffset);
+
+            TargetParameters.CalculateDifference(PlayerParameters, out AmplitudeDiff, out FrequencyDiff, out PhaseDiff);
+            InitialWeightedDiff = CalculateWeightedDiff();
+            if (InitialWeightedDiff < 0.001f) InitialWeightedDiff = 0.001f;
 
             _targetWave = new Wave(Core.GraphicsDevice, _waveShader)
             {

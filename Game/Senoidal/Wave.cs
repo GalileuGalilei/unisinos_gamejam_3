@@ -1,7 +1,6 @@
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using System;
-using System.Numerics;
 
 namespace game.Senoidal
 {
@@ -61,7 +60,6 @@ namespace game.Senoidal
             // Desenha um retângulo do tamanho exato da tela usando o shader.
             // O shader irá pintar apenas onde a onda senoidal passa, ignorando o resto.
             spriteBatch.Begin(SpriteSortMode.Deferred, BlendState.AlphaBlend, null, null, null, _waveEffect);
-            //Draw(Texture2D texture, Vector2 position, Rectangle? sourceRectangle, Color color, float rotation, Vector2 origin, Vector2 scale, SpriteEffects effects, float layerDepth)
             spriteBatch.Draw(_blankTexture, new Rectangle(0, 0, screenWidth, screenHeight), Color.White);
             spriteBatch.End();
         }
