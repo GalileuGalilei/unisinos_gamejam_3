@@ -14,8 +14,8 @@ namespace game.Scenes;
 
 public class WaveScene : Scene
 {
-    private Wave _senoidalWave;
     private GradientManager _gradientManager;
+    private WaveManager _waveManager;
 
     public override void Initialize()
     {
@@ -28,16 +28,17 @@ public class WaveScene : Scene
 
     public override void LoadContent()
     {
-        _senoidalWave = new Wave(Core.GraphicsDevice);
         _gradientManager = new GradientManager();
+
+        Effect waveShader = Content.Load<Effect>("shaders/WaveShader");
+        _waveManager = new WaveManager(Core.GraphicsDevice, waveShader);
     }
 
     public override void Update(GameTime gameTime)
     {
         // Check for keyboard input and handle it.
         CheckKeyboardInput();
-
-        _senoidalWave.Update(gameTime);
+        _waveManager.Update(gameTime);
     }
 
     private void CheckKeyboardInput()
@@ -53,8 +54,8 @@ public class WaveScene : Scene
 
         if (Core.Input.Keyboard.WasKeyJustPressed(Keys.Space))
         {
-            _senoidalWave.Reset();
             _gradientManager.ResetTexture();
+            _waveManager.Reset();
         }
     }
 
@@ -70,8 +71,9 @@ public class WaveScene : Scene
 
         Texture2D backgroundTexture = _gradientManager.GetTexture();
         Core.SpriteBatch.Draw(backgroundTexture, viewportRect, Color.White);
-        _senoidalWave.Draw(gameTime, Core.SpriteBatch);
 
         Core.SpriteBatch.End();
+
+        _waveManager.Draw(Core.SpriteBatch);
     }
 }

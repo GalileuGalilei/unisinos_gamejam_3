@@ -1,85 +1,69 @@
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
-using Microsoft.Xna.Framework.Input;
 using System;
 
 namespace game.Senoidal
 {
     public class Wave
     {
-        private const int MIN_AMPLITUDE = 10;
-        private const int MAX_AMPLITUDE = 200;
-        private const int MIN_FREQUENCY = 1;
-        private const int MAX_FREQUENCY = 10;
-
         private GraphicsDevice _graphicsDevice;
-        private Texture2D _pixel;
-        private Random _random;
+        private Texture2D _blankTexture; // Textura invisível para servir de "tela de pintura" para o shader
+        private Effect _waveEffect;
 
-        // Parâmetros da Onda Senoidal
-        private float _amplitude = 100f;   // Altura em pixels
-        private float _frequency = 0.010f; // Controla o comprimento de onda (menor = mais larga)
-        private float _phase = 0f;         // Deslocamento horizontal
-        private float _speed = 2f;         // Velocidade da animação da onda
+        // Propriedades físicas da onda
+        public float Amplitude { get; set; } = 100f;
+        public float Frequency { get; set; } = 0.003f; // Valor menor por conta da escala de pixels
+        public float Phase { get; set; } = 0f;
+        public float PhaseOffset { get; set; } = 0f;
+        public float Speed { get; set; } = 2f;
 
-        public Wave(GraphicsDevice graphicsDevice)
+        // Customizações Visuais
+        public Color Color { get; set; } = Color.White;
+        public float Thickness { get; set; } = 3.0f;
+        public bool IsDotted { get; set; } = false;
+        public float DotSpacing { get; set; } = 8.0f; // Quanto menor, mais pontilhados por segmento
+
+        public Wave(GraphicsDevice graphicsDevice, Effect waveEffect)
         {
             _graphicsDevice = graphicsDevice;
+            _waveEffect = waveEffect;
 
-            _pixel = new Texture2D(_graphicsDevice, 1, 1);
-            _pixel.SetData(new[] { Color.White });
-            
-            _random = new Random();            
+            // Criamos uma textura 1x1 transparente para podermos esticar 
+            // e renderizar o shader sobre a tela toda
+            _blankTexture = new Texture2D(_graphicsDevice, 1, 1);
+            _blankTexture.SetData(new[] { Color.White });
         }
 
         public void Update(GameTime gameTime)
         {
-            _phase += _speed * (float)gameTime.ElapsedGameTime.TotalSeconds;
+            Phase += Speed * (float)gameTime.ElapsedGameTime.TotalSeconds;
         }
 
-        public void Reset()
-        {
-            _amplitude = _random.Next(MIN_AMPLITUDE, MAX_AMPLITUDE);
-            _frequency = _random.Next(MIN_FREQUENCY, MAX_FREQUENCY) / 1000f;
-        }
-
-        public void Draw(GameTime gameTime, SpriteBatch spriteBatch)
+        public void Draw(SpriteBatch spriteBatch)
         {
             int screenWidth = _graphicsDevice.Viewport.Width;
-            int centerY = _graphicsDevice.Viewport.Height / 2;
+            int screenHeight = _graphicsDevice.Viewport.Height;
+            float centerY = screenHeight / 2f;
 
-            Vector2? previousPoint = null;
+            // Passa os parâmetros de posicionamento e formato para o shader
+            _waveEffect.Parameters["ScreenWidth"]?.SetValue((float)screenWidth);
+            _waveEffect.Parameters["ScreenHeight"]?.SetValue((float)screenHeight);
+            _waveEffect.Parameters["CenterY"]?.SetValue(centerY);
+            _waveEffect.Parameters["Amplitude"]?.SetValue(Amplitude);
+            _waveEffect.Parameters["Frequency"]?.SetValue(Frequency);
+            _waveEffect.Parameters["Phase"]?.SetValue(Phase + PhaseOffset);
 
-            for (int x = 0; x < screenWidth; x++)
-            {
-                float y = _amplitude * (float)Math.Sin((2 * Math.PI * _frequency * x) + _phase) + centerY;
-                Vector2 currentPoint = new Vector2(x, y);
+            // Passa as configurações de estilização
+            _waveEffect.Parameters["WaveColor"]?.SetValue(Color.ToVector4());
+            _waveEffect.Parameters["Thickness"]?.SetValue(Thickness);
+            _waveEffect.Parameters["Dotted"]?.SetValue(IsDotted ? 1.0f : 0.0f);
+            _waveEffect.Parameters["DotSpacing"]?.SetValue(DotSpacing);
 
-                if (previousPoint.HasValue)
-                {
-                    DrawLine(spriteBatch, previousPoint.Value, currentPoint, Color.White, 2f);
-                }
-
-                previousPoint = currentPoint;
-            }
-        }
-
-        private void DrawLine(SpriteBatch spriteBatch, Vector2 start, Vector2 end, Color color, float thickness = 1f)
-        {
-            Vector2 edge = end - start;
-            float angle = (float)Math.Atan2(edge.Y, edge.X);
-
-            spriteBatch.Draw(
-                _pixel,
-                start,
-                null,
-                color,
-                angle,
-                Vector2.Zero,
-                new Vector2(edge.Length(), thickness),
-                SpriteEffects.None,
-                0f
-            );
+            // Desenha um retângulo do tamanho exato da tela usando o shader.
+            // O shader irá pintar apenas onde a onda senoidal passa, ignorando o resto.
+            spriteBatch.Begin(SpriteSortMode.Deferred, BlendState.AlphaBlend, null, null, null, _waveEffect);
+            spriteBatch.Draw(_blankTexture, new Rectangle(0, 0, screenWidth, screenHeight), Color.White);
+            spriteBatch.End();
         }
     }
 }
